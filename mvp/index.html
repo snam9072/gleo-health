@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>글리오 헬스 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Pleos Connect UI Design Guide 다크 테마 토큰 (document.pleos.ai foundations/colors, 2026-11-14 확인)
+     basic_00 #131417 · basic_50 #1D1E21 · basic_100 #313236 · basic_200 #44464E · basic_300 #686A72 · basic_400 #A4A8AE · basic_600 #E0E1E6
+     background_secondary=basic_00, surface_basic=basic_50, surface_high=basic_100, surface_accent=basic_200
+     informative(dark): active #00E074 · positive #0082FF · negative #FF4C28
+     gleo(dark): bubble_primary #545F93 · bubble_secondary #3E4976 · bubble_speaker #B6C1F3 · surface_primary=basic_200 */
+  :root {
+    --bg: #131417; --panel: #1D1E21; --panel2: #313236; --line: #44464E;
+    --text: #FFFFFF; --muted: rgba(255,255,255,.6); --accent: #0082FF; --ok: #00E074; --warn: #FF4C28; --idle: #686A72; --gold: #0082FF;
+    --gleo1: #545F93; --gleo2: #3E4976; --gleo-speaker: #B6C1F3; --btn: #E0E1E6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: "Asta Sans", "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif; }
+  body { display: flex; }
+  #screen { position: relative; flex: 1; display: grid; grid-template-rows: 64px 1fr 92px; min-width: 0; }
+  /* 상태 표시줄 */
+  .status { display: flex; align-items: center; gap: 20px; padding: 0 32px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 20px; }
+  .status .clock { font-weight: 700; font-size: 24px; }
+  .gleo-pill { display: flex; align-items: center; gap: 10px; padding: 8px 18px; border-radius: 24px; background: var(--line); color: var(--gleo-speaker); }
+  .gleo-dot { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg,var(--gleo-speaker),var(--gleo1)); }
+  .spacer { flex: 1; }
+  .drive-state { padding: 6px 14px; border-radius: 8px; background: var(--panel2); color: var(--muted); }
+  .drive-state.moving { color: #fff; background: var(--line); }
+  /* 본문 */
+  .main { display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+  .driving { border-right: 1px solid var(--panel2); padding: 28px; display: flex; flex-direction: column; gap: 22px; background: var(--bg); }
+  .speed { font-size: 96px; font-weight: 800; line-height: 1; }
+  .speed small { font-size: 22px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+  .gear { display: flex; gap: 10px; font-size: 26px; font-weight: 700; }
+  .gear span { color: var(--idle); } .gear span.on { color: #fff; }
+  .meta { color: var(--muted); font-size: 18px; line-height: 1.7; }
+  .meta b { color: var(--text); }
+  .app { padding: 28px 36px; display: grid; grid-template-columns: 1.05fr 1fr; grid-template-rows: auto 1fr; gap: 22px; min-height: 0; }
+  .app-title { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; }
+  .app-title h1 { margin: 0; font-size: 34px; }
+  .app-title .sub { color: var(--muted); font-size: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--panel2); border-radius: 22px; padding: 24px; min-height: 0; }
+  .card h2 { margin: 0 0 14px; font-size: 20px; color: var(--muted); font-weight: 600; }
+  /* 좌석 지도 */
+  .car { position: relative; width: 300px; height: 430px; margin: 4px auto 0; border-radius: 120px 120px 70px 70px; background: var(--bg); border: 2px solid var(--line); }
+  body.video .seat { transition: none; }
+  .seat { position: absolute; width: 112px; height: 120px; text-align: center; border-radius: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 16px; border: 2px solid transparent; transition: all .3s; }
+  .seat .ico { font-size: 34px; }
+  .seat.empty { background: var(--panel2); color: var(--idle); }
+  .seat.ok { background: rgba(0,224,116,.14); border-color: var(--ok); color: #fff; }
+  .seat.warn { background: rgba(255,76,40,.16); border-color: var(--warn); color: #fff; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(255,76,40,.15); } }
+  #DRIVER { left: 30px; top: 70px; } #PASSENGER { right: 30px; top: 70px; }
+  #REAR_LEFT { left: 30px; top: 250px; } #REAR_RIGHT { right: 30px; top: 250px; }
+  .belt-summary { text-align: center; margin-top: 14px; font-size: 20px; }
+  /* 휴식 링 */
+  .rest { display: flex; gap: 26px; align-items: center; }
+  .ring { width: 170px; height: 170px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+  .ring .inner { position: absolute; inset: 16px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; text-align: center; }
+  .ring .t { font-size: 34px; font-weight: 800; } .ring .l { font-size: 14px; color: var(--muted); }
+  .rest-text { font-size: 18px; color: var(--muted); line-height: 1.6; }
+  .rest-text b { color: var(--text); }
+  /* 점수 */
+  .score { display: flex; align-items: center; gap: 24px; }
+  .score .big { font-size: 80px; font-weight: 800; }
+  .score .big small { font-size: 24px; color: var(--muted); }
+  .bars { flex: 1; display: grid; gap: 12px; font-size: 17px; }
+  .bar { height: 12px; border-radius: 6px; background: var(--panel2); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .bar.rest i { background: var(--gold); }
+  .locked { color: var(--muted); font-size: 20px; padding: 26px 0; text-align: center; }
+  .pill { display: inline-block; padding: 6px 14px; border-radius: 16px; font-size: 16px; margin-top: 10px; }
+  .pill.ok { background: rgba(0,224,116,.14); color: var(--ok); } .pill.no { background: var(--panel2); color: var(--muted); }
+  .right-col { display: grid; grid-template-rows: auto auto; gap: 22px; min-height: 0; }
+  /* Gleo 말풍선 */
+  #bubble { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); min-width: 560px; max-width: 900px; padding: 20px 28px; border-radius: 26px;
+    background: linear-gradient(135deg,var(--gleo1),var(--gleo2)); border: none; box-shadow: 0 18px 60px rgba(0,0,0,.5); font-size: 26px; display: none; align-items: center; gap: 16px; }
+  #bubble.show { display: flex; }
+  #bubble .who { font-size: 16px; color: var(--gleo-speaker); display: block; margin-bottom: 4px; }
+  #reply { position: absolute; right: 360px; top: 200px; padding: 14px 22px; border-radius: 22px; background: var(--line); font-size: 22px; display: none; }
+  #reply.show { display: block; }
+  /* 하단 바 */
+  .gnb { display: flex; align-items: center; gap: 22px; padding: 0 32px; background: var(--bg); border-top: 1px solid var(--panel2); }
+  .gnb .app-ico { width: 56px; height: 56px; border-radius: 16px; background: var(--panel2); display: grid; place-items: center; color: #fff; }
+  .gnb .app-ico.on { background: var(--btn); color: #131417; }
+  .gnb .climate { margin-left: auto; display: flex; gap: 28px; color: var(--muted); font-size: 22px; }
+  /* 자막 (영상용) */
+  #caption { position: absolute; left: 0; right: 0; bottom: 110px; text-align: center; display: none; }
+  #caption span { display: inline-block; background: #000c; padding: 12px 28px; border-radius: 14px; font-size: 26px; }
+  #caption.show { display: block; }
+  /* 전체 화면 카드 (영상 인트로·문제·엔딩) */
+  #slide { position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%,#3E4976,#131417 70%); display: none; flex-direction: column; justify-content: center; padding: 0 140px; gap: 26px; z-index: 5; }
+  #slide.show { display: flex; }
+  #slide h1 { font-size: 72px; margin: 0; } #slide p { font-size: 30px; color: #c8d3de; margin: 0; line-height: 1.6; }
+  #slide .stats { display: flex; gap: 28px; margin-top: 10px; }
+  #slide .stat { background: #ffffff10; border: 1px solid #ffffff22; border-radius: 22px; padding: 26px 32px; min-width: 300px; }
+  #slide .stat b { display: block; font-size: 52px; } #slide .stat span { color: var(--muted); font-size: 20px; }
+  #slide .src { font-size: 16px; color: #6f7d8b; }
+  /* 가상 콘솔 */
+  #console { width: 340px; background: var(--bg); border-left: 1px solid var(--panel2); padding: 18px; overflow: auto; font-size: 15px; }
+  #console h3 { margin: 6px 0 10px; font-size: 16px; color: var(--muted); }
+  #console .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  #console button { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; font: inherit; }
+  #console button.on { background: var(--btn); color: #131417; }
+  #console .log { background: var(--panel); border-radius: 8px; padding: 8px; min-height: 120px; white-space: pre-wrap; font-size: 13px; color: #b8c4d0; }
+  body.video #console { display: none; }
+</style>
+</head>
+<body>
+<div id="screen">
+  <div class="status">
+    <span class="clock" id="clock">09:00</span>
+    <span class="gleo-pill"><span class="gleo-dot"></span>Gleo</span>
+    <span class="spacer"></span>
+    <span class="drive-state" id="driveState">정차 · P</span>
+    <span>5G ▮▮▮</span>
+  </div>
+  <div class="main">
+    <aside class="driving">
+      <div class="speed"><span id="speed">0</span><small>km/h</small></div>
+      <div class="gear"><span data-g="P">P</span><span>R</span><span>N</span><span data-g="D">D</span></div>
+      <div class="meta">이번 주행 <b id="tripMin">0분</b><br>연속 운전 <b id="contMin">0분</b><br>탑승 <b id="occ">1명</b></div>
+    </aside>
+    <section class="app">
+      <div class="app-title"><h1>글리오 헬스</h1><span class="sub">탑승자 모두의 안전벨트와 휴식</span></div>
+      <div class="card">
+        <h2>좌석 · 안전벨트</h2>
+        <div class="car">
+          <div class="seat" id="DRIVER"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>운전석</span></div>
+          <div class="seat" id="PASSENGER"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>조수석</span></div>
+          <div class="seat" id="REAR_LEFT"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>뒷좌석 왼쪽</span></div>
+          <div class="seat" id="REAR_RIGHT"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>뒷좌석 오른쪽</span></div>
+        </div>
+        <div class="belt-summary" id="beltSummary"></div>
+      </div>
+      <div class="right-col">
+        <div class="card">
+          <h2>휴식 페이스메이커</h2>
+          <div class="rest">
+            <div class="ring" id="ring"><div class="inner"><div><div class="t" id="ringT">0:00</div><div class="l">/ 2:00 연속 운전</div></div></div></div>
+            <div class="rest-text" id="restText">2시간마다 15분 쉬면<br><b>휴식 점수</b>가 지켜져요</div>
+          </div>
+        </div>
+        <div class="card" id="scoreCard">
+          <h2>글리오 헬스 점수</h2>
+          <div id="scoreBody"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="gnb">
+    <div class="app-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg></div><div class="app-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div><div class="app-ico on"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v9l7 1.5V19H8a2 2 0 0 1-2-2V3"/><path d="M12 19v2"/></svg></div><div class="app-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></div>
+    <div class="climate"><span>22.0°</span><span>운전석 통풍 1</span><span>22.0°</span></div>
+  </div>
+  <div id="bubble"><span class="gleo-dot" style="width:22px;height:22px"></span><div><span class="who">Gleo · 글리오 헬스</span><span id="bubbleText"></span></div></div>
+  <div id="reply"></div>
+  <div id="caption"><span id="captionText"></span></div>
+  <div id="slide"></div>
+</div>
+
+<aside id="console">
+  <h3>가상 콘솔 (Virtual Console 대용)</h3>
+  <div id="seatCtl"></div>
+  <h3>주행</h3>
+  <div class="row"><button id="gP">P</button><button id="gD">D</button> 속도 <input id="spd" type="range" min="0" max="120" value="0"> <span id="spdV">0</span></div>
+  <div class="row"><button data-adv="1">+1분</button><button data-adv="10">+10분</button><button data-adv="15">+15분</button><button data-adv="60">+60분</button></div>
+  <h3>보험 연계</h3>
+  <div class="row"><label><input type="checkbox" id="consent"> 점수 공유에 동의</label></div>
+  <div class="row"><button id="reset">새 주행</button><button id="dash">대시보드 열기</button></div>
+  <h3>이벤트 (음성 1회)</h3>
+  <div class="log" id="log"></div>
+</aside>
+
+<script type="module">
+import { SEATS, SEAT_NAMES, newTrip, tick, tripScore, monthlyReport, canOpenDashboard, RULES } from "./engine.js";
+
+const $ = (id) => document.getElementById(id);
+const state = {
+  trip: newTrip(), gear: "P", speed: 0, clockMin: 9 * 60,
+  seats: { DRIVER: { occupied: true, buckled: true }, PASSENGER: { occupied: false, buckled: false }, REAR_LEFT: { occupied: false, buckled: false }, REAR_RIGHT: { occupied: false, buckled: false } },
+  consent: false, events: [], monthTrips: [], showScore: false,
+};
+const hm = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
+const signal = (minutes) => ({ minutes, speedKmh: state.speed, gear: state.gear, seats: state.seats });
+
+function say(text, reply) {
+  $("bubbleText").textContent = text;
+  $("bubble").classList.toggle("show", !!text);
+  $("reply").textContent = reply ?? "";
+  $("reply").classList.toggle("show", !!reply);
+}
+
+function advance(minutes) {
+  for (let i = 0; i < minutes; i++) {
+    const r = tick(state.trip, signal(1));
+    state.trip = r.trip;
+    state.clockMin += 1;
+    for (const e of r.events) { state.events.push(e); log(`${hm(state.clockMin)} ${e.text}`); say(e.text); }
+  }
+  render();
+}
+function log(t) { $("log").textContent = (t + "\n" + $("log").textContent).slice(0, 4000); }
+
+function render() {
+  const moving = state.speed > 0 && state.gear !== "P";
+  $("clock").textContent = hm(state.clockMin);
+  $("speed").textContent = state.speed;
+  document.querySelectorAll(".gear span").forEach((s) => s.classList.toggle("on", s.dataset.g === state.gear));
+  $("driveState").textContent = moving ? `주행 중 · ${state.gear}` : `정차 · ${state.gear}`;
+  $("driveState").classList.toggle("moving", moving);
+  $("tripMin").textContent = `${state.trip.minutes}분`;
+  $("contMin").textContent = hm(state.trip.continuousMin);
+  let occ = 0, need = 0;
+  for (const s of SEATS) {
+    const st = state.seats[s]; const el = $(s);
+    el.className = "seat " + (!st.occupied ? "empty" : st.buckled ? "ok" : "warn");
+    if (st.occupied) { occ++; if (!st.buckled) need++; }
+  }
+  $("occ").textContent = `${occ}명`;
+  $("beltSummary").innerHTML = need ? `<span style="color:var(--warn)">벨트를 매지 않은 좌석 ${need}곳</span>` : `<span style="color:var(--ok)">탑승 ${occ}석 모두 착용 ✓</span>`;
+  const pct = Math.min(1, state.trip.continuousMin / RULES.restSuggestAtMin);
+  const col = pct >= 1 ? "var(--warn)" : pct > 0.75 ? "var(--gold)" : "var(--accent)";
+  $("ring").style.background = `conic-gradient(${col} ${pct * 360}deg, var(--panel2) 0)`;
+  $("ringT").textContent = hm(state.trip.continuousMin);
+  // 점수: 주행 중엔 잠금 (D9)
+  const s = tripScore(state.trip);
+  if (moving) {
+    $("scoreBody").innerHTML = `<div class="locked">🔒 정차 후 볼 수 있어요</div>`;
+  } else {
+    const m = monthlyReport([...state.monthTrips, state.trip], { consent: state.consent });
+    $("scoreBody").innerHTML = `<div class="score"><div class="big">${s.total}<small>점</small></div>
+      <div class="bars"><div>벨트 ${s.belt} <span style="color:var(--muted)">× 0.8</span><div class="bar"><i style="width:${s.belt}%"></i></div></div>
+      <div>휴식 ${s.rest} <span style="color:var(--muted)">× 0.2</span><div class="bar rest"><i style="width:${s.rest}%"></i></div></div></div></div>
+      <div>${m.eligible ? '<span class="pill ok">이번 달 ' + m.monthScore + '점 · 할인 대상</span>' : '<span class="pill no">이번 달 ' + m.monthScore + '점 · 80점부터 할인 대상</span>'}
+      <span class="pill no">${state.consent ? "점수만 공유 중 · 할인에만 사용" : "보험사 공유 꺼짐"}</span></div>`;
+  }
+  // 콘솔
+  $("seatCtl").innerHTML = SEATS.map((k) => `<div class="row"><span style="width:96px">${SEAT_NAMES[k]}</span>
+    <button data-seat="${k}" data-f="occupied" class="${state.seats[k].occupied ? "on" : ""}">착석</button>
+    <button data-seat="${k}" data-f="buckled" class="${state.seats[k].buckled ? "on" : ""}">벨트</button></div>`).join("");
+  $("gP").classList.toggle("on", state.gear === "P"); $("gD").classList.toggle("on", state.gear === "D");
+  $("spd").value = state.speed; $("spdV").textContent = state.speed; $("consent").checked = state.consent;
+}
+
+// 콘솔 이벤트
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("button"); if (!b) return;
+  if (b.dataset.seat) { const st = state.seats[b.dataset.seat]; st[b.dataset.f] = !st[b.dataset.f]; if (b.dataset.f === "buckled" && st.buckled) st.occupied = true; if (b.dataset.f === "occupied" && !st.occupied) st.buckled = false; advance(0); }
+  if (b.dataset.adv) advance(Number(b.dataset.adv));
+  if (b.id === "gP") { state.gear = "P"; state.speed = 0; advance(0); }
+  if (b.id === "gD") { state.gear = "D"; if (!state.speed) state.speed = 30; advance(0); }
+  if (b.id === "reset") { state.monthTrips.push(state.trip); state.trip = newTrip(); say(""); render(); }
+  if (b.id === "dash") { const r = canOpenDashboard(signal(0)); say(r.ok ? "정차 중이라 대시보드를 열었어요" : r.text); }
+});
+$("spd").addEventListener("input", (e) => { state.speed = Number(e.target.value); if (state.speed > 0 && state.gear === "P") state.gear = "D"; advance(0); });
+$("consent").addEventListener("change", (e) => { state.consent = e.target.checked; render(); });
+
+// ---- 영상 장면 (?scene=N) : 엔진으로 실제 시나리오를 돌려 그 시점의 상태를 보여 준다 ----
+const S = (o) => Object.fromEntries(SEATS.map((k) => [k, { occupied: !!o[k], buckled: o[k] === "b" }]));
+const FAMILY_UNBUCKLED = S({ DRIVER: "b", PASSENGER: "b", REAR_LEFT: "b", REAR_RIGHT: "o" });
+const FAMILY_OK = S({ DRIVER: "b", PASSENGER: "b", REAR_LEFT: "b", REAR_RIGHT: "b" });
+function play(steps) { // steps: [gear, speed, seats, minutes]
+  for (const [g, sp, st, min] of steps) { state.gear = g; state.speed = sp; state.seats = structuredClone(st); for (let i = 0; i < min; i++) { const r = tick(state.trip, signal(1)); state.trip = r.trip; state.clockMin++; state.events.push(...r.events); } }
+}
+function slide(html) { $("slide").innerHTML = html; $("slide").classList.add("show"); }
+function caption(t) { $("captionText").textContent = t; $("caption").classList.toggle("show", !!t); }
+const scenes = {
+  1: () => slide(`<div style="display:flex;align-items:center;gap:22px"><span class="gleo-dot" style="width:56px;height:56px"></span><span style="font-size:30px;color:#B6C1F3">Pleos Connect · Gleo 앱</span></div>
+       <h1>글리오 헬스</h1><p>차가 좌석마다 안전벨트와 휴식을 챙기고,<br>그 기록을 운전자 동의 아래 보험 혜택으로 돌려줍니다.</p>`),
+  2: () => slide(`<h1 style="font-size:56px">뒷좌석은 여전히 사각지대</h1>
+       <div class="stats"><div class="stat"><b>28~70%</b><span>뒷좌석 안전벨트 착용률<br>(조사 방식에 따라)</span></div>
+       <div class="stat"><b>2.8~3.7배</b><span>미착용 시 치사율<br>(앞좌석·뒷좌석)</span></div>
+       <div class="stat"><b>82분</b><span>수도권 하루 통근 시간<br>(전국 73.9분)</span></div></div>
+       <p class="src">출처: 삼성화재 교통안전문화연구소·교통문화지수(2025), 한국도로공사, 통계청 실험적 통계(2024)</p>`),
+  3: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1]]); caption("가족 4명 탑승 · 뒷좌석 오른쪽 벨트 미착용 · P단에서는 알리지 않습니다"); },
+  4: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1]]); say("뒷좌석 오른쪽 안전벨트를 매 주세요"); caption("출발하는 순간, 좌석 이름으로 한 번만 — 경고음은 순정 기능이 맡습니다"); },
+  5: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 80, FAMILY_OK, 3]]); caption("4석 모두 착용 — 착석한 좌석의 벨트 체결 시간을 기록합니다"); },
+  6: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 119]]); say("2시간째 운전 중이에요. 12km 앞 휴게소에 들를까요?", "응, 들러 줘"); caption("연속 운전 2시간 → 휴식 제안 · 말 한마디로 휴게소 경유지 추가"); },
+  7: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 15]]); say("휴식이 기록됐어요. 연속 운전 시간을 다시 셉니다"); caption("휴게소에서 P단 15분 이상 → 휴식 인정"); },
+  8: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 16], ["P", 0, FAMILY_OK, 1]]); say("다시 출발하기 전에, 저장된 운전 자세로 되돌릴까요?", "응"); caption("휴식 뒤 P단·벨트 체결일 때만 — 순정 시트 메모리를 불러 씁니다 (주행 중엔 절대 움직이지 않음)"); },
+  9: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); state.consent = true; caption("도착 · 정차 중에만 점수 확인 — 벨트 × 0.8 + 휴식 × 0.2"); },
+  10: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); state.consent = true; say("이번 달 글리오 헬스 점수는 " + monthlyReport([state.trip], { consent: true }).monthScore + "점이에요. 보험 할인 대상이에요"); caption("동의한 운전자만 · 월 1회 점수만 보험사로 · 할인에만 사용 (불이익 없음)"); },
+  11: () => { state.clockMin = 18 * 60 + 5; play([["P", 0, FAMILY_OK, 1]]); say("4석 모두 착석했고 모두 벨트를 맸어요", "글리오, 자리·벨트 점검해 줘"); caption("Gleo 앱 연동 — 자리·벨트 점검 · 점수 · 쉴 곳 찾기 (함수 3개)"); },
+  12: () => slide(`<h1 style="font-size:56px">Pleos Connect SDK 로 만듭니다</h1>
+       <p>Vehicle SDK — 좌석 착석·안전벨트·시트 메모리·주행 시간 · NaviHelper — 휴게소 경유지<br>TextToSpeech · SpeechToText — 한 번의 음성 안내 · Gleo Interface — 음성으로 앱 기능 실행</p>
+       <p style="margin-top:20px"><b style="color:#fff">초기 수익</b> 보험사 B2B(점수 API · 할인 특약) → 렌트·구독·법인차 리포트 → 블루핸즈 연계</p>
+       <p><b style="color:#fff">로드맵</b> 글리오 헬스 → 좌석 건강(Seat Health) 모듈 + 다른 헬스 기능</p>`),
+};
+const params = new URLSearchParams(location.search);
+const scene = Number(params.get("scene"));
+if (scene && scenes[scene]) { document.body.classList.add("video"); scenes[scene](); render(); if (scene === 9) say(""); }
+else render();
+</script>
+</body>
+</html>

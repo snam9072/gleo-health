@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">글리오 헬스</string>
+    <string name="app_sub">탑승자 모두의 안전벨트와 휴식</string>
+    <string name="seats_title">좌석 · 안전벨트</string>
+    <string name="rest_title">휴식 페이스메이커</string>
+    <string name="score_title">글리오 헬스 점수</string>
+    <string name="locked">정차 후 볼 수 있어요</string>
+    <string name="consent">점수만 보험사와 공유 (할인에만 사용)</string>
+    <string name="sim_title">시연용 신호 (에뮬레이터 Virtual Console 대용)</string>
+</resources>

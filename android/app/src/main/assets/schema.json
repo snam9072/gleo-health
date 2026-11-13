@@ -1,0 +1,58 @@
+{
+  "packageName": "com.gleohealth.app",
+  "appDescription": "Gleo Health checks seat belts for every occupied seat, paces driving rest breaks, and shows a seat-safety score that drivers can share with a partner insurer for discounts.",
+  "invokeWord": "글리오 헬스",
+  "version": "0.1.0",
+  "actionCalls": [
+    {
+      "type": "function",
+      "function": {
+        "name": "CHECK_SEAT_AND_BELTS",
+        "description": "Check which seats are occupied and whether each occupied seat has its seat belt buckled, then tell the user any seat that still needs buckling.",
+        "component": "service",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "MY_SEAT_HEALTH_SCORE",
+        "description": "Tell the user the seat-safety score for the current trip or this month, made of 80 percent seat belt use and 20 percent rest breaks.",
+        "component": "service",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "period": {
+              "type": "string",
+              "description": "Which score to report.",
+              "enum": [
+                "trip",
+                "month"
+              ]
+            }
+          },
+          "required": [
+            "period"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "FIND_REST_STOP",
+        "description": "Open the navigation place search for rest areas so the driver can pick one and add it as a stop.",
+        "component": "service",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    }
+  ]
+}

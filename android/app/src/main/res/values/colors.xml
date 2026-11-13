@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pleos Connect UI Design Guide 다크 테마 토큰 (document.pleos.ai foundations/colors, 2026-11-14 확인) -->
+<resources>
+    <color name="basic_00">#131417</color>
+    <color name="basic_50">#1D1E21</color>
+    <color name="basic_100">#313236</color>
+    <color name="basic_200">#44464E</color>
+    <color name="basic_300">#686A72</color>
+    <color name="basic_400">#A4A8AE</color>
+    <color name="basic_600">#E0E1E6</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#99FFFFFF</color>
+    <!-- system tokens -->
+    <color name="background_secondary">@color/basic_00</color>
+    <color name="surface_basic">@color/basic_50</color>
+    <color name="surface_high">@color/basic_100</color>
+    <color name="surface_accent">@color/basic_200</color>
+    <color name="button_filled_enabled">@color/basic_600</color>
+    <color name="informative_active">#00E074</color>
+    <color name="informative_positive">#0082FF</color>
+    <color name="informative_negative">#FF4C28</color>
+    <color name="gleo_bubble_primary">#545F93</color>
+    <color name="gleo_bubble_secondary">#3E4976</color>
+    <color name="gleo_bubble_speaker">#B6C1F3</color>
+</resources>
