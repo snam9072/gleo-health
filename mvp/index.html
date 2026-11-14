@@ -179,7 +179,7 @@
           <div class="group"><h2 class="axis axis-car"><svg width="24" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15v-3l2-5h10l3 4h2a1 1 0 0 1 1 1v3h-2"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6"/></svg> car · 차</h2>
             <div class="tiles">
               <button class="tile soon" data-soon="road"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 5 21M15 3l4 18M12 5v2M12 11v2M12 17v2"/></svg><b>노면 정보</b><span>다음 버전</span></button>
-              <button class="tile soon" data-soon="battery"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="4" width="10" height="17" rx="2"/><path d="M10 2h4M10 16h4M10 12h4"/></svg><b>차량 정보</b><span>배터리 · 다음 버전</span></button>
+              <button class="tile soon" data-soon="battery"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="4" width="10" height="17" rx="2"/><path d="M10 2h4M10 16h4M10 12h4"/></svg><b>차량 정보</b><span>배터리 · 관리 인증 · 다음 버전</span></button>
             </div></div>
         </div>
         <div class="soon-panel" id="soonPanel" hidden></div>
@@ -378,8 +378,8 @@ function render() {
 const SOON = {
   air: "<b>공기 상태</b> — 막히는 길에서 바깥 공기가 들어오는지, 창을 닫고 오래 달렸는지 보고 환기할 때를 알려 줘요. 공조 신호를 읽는 권한을 확인한 뒤 열어요.",
   mind: "<b>마인드</b> — 오래 막힌 길, 밤 운전, 긴 운전 뒤에 잠깐 숨 돌릴 때를 알려 줘요. 의료 기능이 아니라 쉬어 가기 안내예요.",
-  road: "<b>노면 정보</b> — 여러 차가 지난 길의 패임·결빙 구간을 미리 알려 줘요. 차량 센서는 앱이 바로 읽을 수 없어 현대차 데이터와 연결해 열어요.",
-  battery: "<b>차량 정보</b> — 배터리·타이어·경고등을 쉬운 말로 풀고 충전소·블루핸즈 찾기로 이어 줘요. 차량 신호 권한을 확인한 뒤 열어요.",
+  road: "<b>노면 정보</b> — 현대차 차량이 감지한 패임·균열을 모아, 지자체는 먼저 고칠 곳을, 지도앱은 저상·고가차가 피할 길을 알 수 있게 해요. 운전자를 알 수 없게 도로 지점만 모아요.",
+  battery: "<b>차량 정보</b> — 배터리·타이어·경고등을 쉬운 말로 풀고, 잘 관리한 기록을 '동급 상위 몇 %' 인증서로 남겨 중고로 팔 때 제값을 받게 해요. 인증서는 원할 때만 보여 줘요.",
 };
 // 콘솔 이벤트
 document.addEventListener("click", (ev) => {
