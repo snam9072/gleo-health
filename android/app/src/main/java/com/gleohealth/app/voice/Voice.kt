@@ -9,11 +9,16 @@ import java.util.Locale
  * Pleos TextToSpeech SDK 로 바꿀 자리 — 지금은 Android 표준 TTS (TODO: Pleos TTS 연동 확인 후 교체).
  */
 class Voice(context: Context) {
-    private var ready = false
+    @Volatile private var ready = false
     private var last: String? = null
-    private val tts = TextToSpeech(context.applicationContext) { status ->
-        ready = status == TextToSpeech.SUCCESS
-    }.also { it.language = Locale.KOREAN }
+    private lateinit var tts: TextToSpeech
+
+    init {
+        // 언어는 엔진 준비가 끝난 뒤에 정한다(감사 P2-5). 한국어를 못 쓰면 읽지 않는다.
+        tts = TextToSpeech(context.applicationContext) { status ->
+            ready = status == TextToSpeech.SUCCESS && tts.setLanguage(Locale.KOREAN) >= TextToSpeech.LANG_AVAILABLE
+        }
+    }
 
     fun speakOnce(text: String) {
         if (!ready || text == last) return

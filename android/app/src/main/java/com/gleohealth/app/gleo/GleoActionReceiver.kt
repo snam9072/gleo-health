@@ -30,9 +30,13 @@ class GleoActionReceiver : BroadcastReceiver() {
         val action = intent.action ?: return
         if (action !in ACTIONS) return
         if (!GleoGuard.acceptSender(senderOf(context), BuildConfig.GLEO_STRICT_SENDER)) return
-        if (!GleoGuard.allow(action, SystemClock.elapsedRealtime())) return
+        val senderKey = sentFromUid.takeIf { it >= 0 }?.toString() ?: "unknown"
+        if (!GleoGuard.allow(action, senderKey, SystemClock.elapsedRealtime())) {
+            send(context, action, Reply("fail", "Please try again in a moment.", null)) // 말없이 버리지 않는다(감사 P1-7)
+            return
+        }
         HealthCore.init(context)
-        val params = runCatching { JSONObject(intent.getStringExtra("ACTION_PARAM")?.trim('"') ?: "{}") }.getOrDefault(JSONObject())
+        val params = GleoGuard.parseParams(intent.getStringExtra("ACTION_PARAM")) ?: JSONObject()
         when (action) {
             REST -> openRestAreaSearch(context)
             SCORE -> send(context, SCORE, score(params.optString("period", "trip")))
@@ -61,12 +65,13 @@ class GleoActionReceiver : BroadcastReceiver() {
     private fun openRestAreaSearch(context: Context) {
         val pending = goAsync()
         val navi = NaviHelper(context.applicationContext)
-        var done = false
+        val done = java.util.concurrent.atomic.AtomicBoolean(false)
         fun finish(r: Reply) {
-            if (done) return
-            done = true
+            if (!done.compareAndSet(false, true)) return
             send(context, REST, r); runCatching { navi.release() }; pending.finish()
         }
+        // NaviHelper 가 답하지 않아도 5초 안에 끝낸다 — Gleo 7초 제한·브로드캐스트 ANR 방지(감사 P1-8)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finish(Reply("fail", "Navigation did not respond in time.", null)) }, REST_TIMEOUT_MS)
         runCatching {
             navi.initialize(
                 {
@@ -81,7 +86,12 @@ class GleoActionReceiver : BroadcastReceiver() {
 
     data class Reply(val status: String, val message: String, val data: JSONArray?)
 
-    private fun checkSeats(snap: VehicleSnapshot): Reply {
+    private fun checkSeats(snap: VehicleSnapshot): Reply = checkSeatsRaw(snap).let { r ->
+        // 시연 신호로 답할 때는 실제 차 값이 아님을 밝힌다(감사 P2-6)
+        if (HealthCore.usingManual) r.copy(message = "Demo signals: " + r.message) else r
+    }
+
+    private fun checkSeatsRaw(snap: VehicleSnapshot): Reply {
         val seats = snap.seats
         val open = Seat.entries.filter { (seats[it] ?: SeatState()).let { s -> s.occupied && !s.buckled } }
         val occupied = Seat.entries.count { seats[it]?.occupied == true }
@@ -94,7 +104,7 @@ class GleoActionReceiver : BroadcastReceiver() {
     }
 
     private fun score(period: String): Reply {
-        val l = HealthCore.ledger
+        val l = HealthCore.currentLedger()
         return if (period == "month") {
             val m = GleoHealthEngine.monthlyReport(l.monthTrips(), consent = false)
             Reply("success", "This month's Gleo Health score is ${m.monthScore}. " + if (m.eligible) "It qualifies for the insurance discount." else "A score of 80 or more qualifies for the discount.",
@@ -112,8 +122,11 @@ class GleoActionReceiver : BroadcastReceiver() {
             r.data?.let { body.put("data", it.toString()) }
             val base = Intent(RESPONSE).putExtra("packageName", context.packageName).putExtra("response", body.toString())
             val targets = GleoGuard.responseTargets(systemResponseReceivers(context), context.packageName)
-            if (targets == null) context.sendBroadcast(base) // 공식 예제 방식(수신기가 코드로 등록된 경우) — 내용은 최소값
-            else targets.forEach { context.sendBroadcast(Intent(base).setPackage(it)) }
+            if (targets == null) {
+                // 받는 앱을 못 찾으면 공식 예제대로 보내되, 다른 앱이 엿들어도 쓸 수 있는 data(좌석·점수 값)는 빼고 문장만(감사 P1-6)
+                val minimal = JSONObject().put("functionName", functionName).put("status", r.status).put("message", r.message)
+                context.sendBroadcast(Intent(RESPONSE).putExtra("packageName", context.packageName).putExtra("response", minimal.toString()))
+            } else targets.forEach { context.sendBroadcast(Intent(base).setPackage(it)) }
         }
     }
 
@@ -136,5 +149,6 @@ class GleoActionReceiver : BroadcastReceiver() {
         val ACTIONS = setOf(CHECK, SCORE, REST)
         const val RESPONSE = "ai.pleos.playground.intent.action.APP_ACTION_RESPONSE"
         private const val READ_TIMEOUT_MS = 3_000L
+        private const val REST_TIMEOUT_MS = 5_000L
     }
 }

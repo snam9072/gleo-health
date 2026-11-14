@@ -132,3 +132,19 @@ test("D28: 허리 받침 0단계·같은 자세 60분에서만 안내, 받침 �
   assert.equal(postureAdvice({ backrest: 5, backrestMax: 9, sameMin: 59 }).tips.length, 0);
   assert.match(postureAdvice({ backrest: 5, backrestMax: 9, sameMin: 60 }).tips[0], /한 시간째/);
 });
+
+import { guideMs } from "./engine.js";
+test("안내 말풍선은 항상 3.5~7초 안에 사라진다 (계속 떠 있던 버그 재발 방지)", () => {
+  assert.equal(guideMs(""), 3500);
+  assert.equal(guideMs("조수석, 벨트 매 주세요"), 3500); // 13자 → 3.28초 → 최소 3.5초
+  assert.equal(guideMs("2시간 달렸어요. 다음 휴게소에서 쉬어 갈까요?"), 4060); // 26자
+  assert.equal(guideMs("가".repeat(200)), 7000);
+});
+
+test("저장소에서 불러온 트립(announced 가 객체·배열)이어도 tick 이 멈추지 않는다 (2026-11-15 버그)", () => {
+  const restored = JSON.parse(JSON.stringify(newTrip())); // Set → {}
+  const r = tick(restored, drive(seats({ PASSENGER: { occupied: true, buckled: false } })));
+  assert.equal(r.events[0].text, "조수석, 벨트 매 주세요");
+  const fromArray = { ...newTrip(), announced: ["PASSENGER"] };
+  assert.equal(tick(fromArray, drive(seats({ PASSENGER: { occupied: true, buckled: false } }))).events.length, 0);
+});

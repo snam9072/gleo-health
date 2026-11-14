@@ -68,6 +68,16 @@ class TripStoreTest {
         val otherKey = AesGcmSealer { KeyGenerator.getInstance("AES").apply { init(256) }.generateKey() }
         TripStore(f, otherKey) { "2026-11" }.save(Ledger("2026-11", current = sampleTrip()))
         assertEquals(Ledger("2026-11"), store.load()) // 다른 키로 만든 파일은 못 연다
+        // 못 연 파일은 지우지 않고 옆으로 옮겨 보존한다 — 빈 기록이 원본을 덮어쓰지 않는다(감사 P1-1)
+        assertEquals(3, tmp.root.listFiles()!!.count { it.name.startsWith("trips.bin.bad-") })
+        assertFalse(f.exists())
+    }
+
+    @Test fun clock_jump_back_or_far_forward_keeps_history() { // 감사 P1-2
+        val l = Ledger("2026-11", current = sampleTrip(), finished = listOf(StoredTrip("2026-10", sampleTrip())))
+        assertEquals(l, TripStore.rollOver(l, "2000-01")) // 부팅 직후 시계가 되돌아감
+        assertEquals(l, TripStore.rollOver(l, "2029-01")) // 26개월 앞으로 튐
+        assertEquals("2026-12", TripStore.rollOver(l, "2026-12").month) // 정상적인 다음 달
     }
 
     @Test fun keeps_13_months_and_rolls_over_month() {

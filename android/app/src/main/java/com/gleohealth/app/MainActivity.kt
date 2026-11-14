@@ -68,8 +68,21 @@ class MainActivity : AppCompatActivity() {
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private val wide get() = resources.configuration.screenWidthDp >= 1200
 
-    private val onState: () -> Unit = { render() }
-    private val onEvent: (Event) -> Unit = { e -> bubble.text = e.text; bubbleBox.visibility = View.VISIBLE }
+    // 속도·좌석 신호가 잦아도 화면은 0.25초에 한 번만 다시 그린다(주행 중 CPU, 감사 P2-1)
+    private var renderPending = false
+    private val onState: () -> Unit = {
+        if (!renderPending) { renderPending = true; bubble.postDelayed({ renderPending = false; render() }, 250) }
+    }
+    private val onEvent: (Event) -> Unit = { e -> showGuide(e.text) }
+
+    /** 안내 말풍선은 이 함수로만 띄운다. Guide.durationMs 뒤 스스로 사라진다(2026-11-15 버그 수정: 숨기는 코드가 없어 계속 떠 있었다). */
+    private val hideGuide = Runnable { bubbleBox.visibility = View.GONE }
+    private fun showGuide(text: String) {
+        bubble.removeCallbacks(hideGuide)
+        bubble.text = text
+        bubbleBox.visibility = View.VISIBLE
+        bubble.postDelayed(hideGuide, com.gleohealth.app.engine.Guide.durationMs(text))
+    }
     private val back = object : OnBackPressedCallback(false) { override fun handleOnBackPressed() = show(seat = false) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +91,20 @@ class MainActivity : AppCompatActivity() {
         setContentView(buildUi())
         onBackPressedDispatcher.addCallback(this, back)
         show(seat = savedInstanceState?.getBoolean("seat") == true)
+        // CAR_SPEED 는 실행 중 허락을 받아야 하는 권한 — 없으면 속도가 0 으로 남아 기록·잠금이 틀어진다(감사 P1-3)
+        if (checkSelfPermission(SPEED) != android.content.pm.PackageManager.PERMISSION_GRANTED) requestPermissions(arrayOf(SPEED), REQ_SPEED)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_SPEED && grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            HealthCore.stopSource(); HealthCore.startSource(this) // 허락받은 뒤 속도 구독을 다시 건다
+        }
+    }
+
+    private companion object {
+        const val SPEED = "android.car.permission.CAR_SPEED"
+        const val REQ_SPEED = 41
     }
 
     override fun onSaveInstanceState(outState: Bundle) { outState.putBoolean("seat", inSeat); super.onSaveInstanceState(outState) }
@@ -92,6 +119,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        bubble.removeCallbacks(hideGuide); bubbleBox.visibility = View.GONE
         HealthCore.uiVisible = false
         HealthCore.removeStateListener(onState)
         HealthCore.removeEventListener(onEvent)
@@ -291,7 +319,7 @@ class MainActivity : AppCompatActivity() {
             button("P 정차") { HealthCore.manual.update { it.copy(gear = Gear.P, speedKmh = 0) } },
             button("D 60km/h") { HealthCore.manual.update { it.copy(gear = Gear.D, speedKmh = 60) } },
             *listOf(1, 10, 15, 60).map { m -> button("+${m}분") { HealthCore.tick(m) } }.toTypedArray(),
-            button("새 주행") { HealthCore.newTrip(); bubbleBox.visibility = View.GONE },
+            button("새 주행") { HealthCore.newTrip(); bubble.removeCallbacks(hideGuide); bubbleBox.visibility = View.GONE },
         ))
         p.addView(row(
             button("등받이 세우기") { pose(-1, 0) }, button("등받이 눕히기") { pose(1, 0) },
@@ -320,10 +348,13 @@ class MainActivity : AppCompatActivity() {
     // ---------------- 그리기 ----------------
     private fun render() {
         val snap = HealthCore.snapshot
-        val l = HealthCore.ledger
-        val moving = HealthCore.signal(0).moving
+        val l = HealthCore.currentLedger()
+        // 속도를 아직 모르면 주행 중으로 보고 잠근다(fail closed, 감사 P1-3)
+        val speedUnknown = !snap.speedKnown && !HealthCore.usingManual
+        val moving = HealthCore.signal(0).moving || speedUnknown
         simPanel.visibility = if (HealthCore.usingManual) View.VISIBLE else View.GONE
-        driveState.text = if (moving) "주행 중 · ${snap.gear} · ${snap.speedKmh}km/h" else "정차 · ${snap.gear}"
+        val demo = if (HealthCore.usingManual) "시연 신호 · " else ""
+        driveState.text = demo + when { speedUnknown -> "속도 확인 중"; moving -> "주행 중 · ${snap.gear} · ${snap.speedKmh}km/h"; else -> "정차 · ${snap.gear}" }
 
         // 안전벨트
         var occ = 0
@@ -352,7 +383,7 @@ class MainActivity : AppCompatActivity() {
         tileSeatSub.text = if (open.isNotEmpty()) "${open.joinToString()} 벨트 풀림" else "${occ}명 착용 · 쉬기까지 ${if (left > 0) hm(left) else "지금"}"
 
         // 점수 (D9: 주행 중 잠금)
-        val locked = GleoHealthEngine.canOpenDashboard(HealthCore.signal(0))
+        val locked = if (speedUnknown) getString(R.string.speed_unknown) else GleoHealthEngine.canOpenDashboard(HealthCore.signal(0))
         val s = GleoHealthEngine.tripScore(l.current)
         if (locked != null) { scoreText.text = locked; scoreDetail.text = "" }
         else { scoreText.text = "${s.total}점"; scoreDetail.text = "벨트 ${s.belt} × 0.8 + 휴식 ${s.rest} × 0.2" }

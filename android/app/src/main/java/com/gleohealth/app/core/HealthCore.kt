@@ -66,15 +66,21 @@ object HealthCore {
     /** 차량 신호 구독 시작(서비스가 부른다). Pleos SDK 가 없으면 수동 신호. */
     fun startSource(context: Context) {
         if (source != null) return
-        val src = PleosSourceFactory.createOrNull(context.applicationContext) ?: manual
+        val pleos = PleosSourceFactory.createOrNull(context.applicationContext)
+        // SDK 가 시작에서 예외를 던져도(권한 없음 등) 앱이 죽지 않게 — 실패하면 '시연 신호'로 내려가고 화면에 표시한다(감사 P1-4)
+        val started = pleos?.let { p -> runCatching { p.start { snap -> main.post { snapshot = snap; notifyState() } }; p }.onFailure { runCatching { p.stop() } }.getOrNull() }
+        val src = started ?: manual
+        if (started == null) src.start { snap -> main.post { snapshot = snap; notifyState() } }
         source = src
-        src.start { snap -> main.post { snapshot = snap; notifyState() } }
     }
 
     fun stopSource() {
-        source?.stop()
+        runCatching { source?.stop() }
         source = null
     }
+
+    /** 지금 달 기준으로 넘긴 기록(저장하지 않음) — tick 없이 Gleo 가 물어도 지난달을 이번 달로 답하지 않게(감사 P2-8) */
+    fun currentLedger(): Ledger = TripStore.rollOver(ledger, month())
 
     fun signal(minutes: Int) = Signal(minutes, snapshot.speedKmh, snapshot.gear, snapshot.seats)
 
@@ -99,7 +105,7 @@ object HealthCore {
 
     /** 주행을 끝내고 새 주행 시작(시연 버튼). */
     fun newTrip() {
-        val l = ledger
+        val l = currentLedger()
         if (l.current.minutes == 0) return
         restCount = 0; postureSameMin = 0
         commit(l.copy(current = Trip(), finished = l.finished + com.gleohealth.app.store.StoredTrip(l.month, l.current)))

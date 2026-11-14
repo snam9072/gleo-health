@@ -36,7 +36,9 @@ export function newTrip() {
  * 반환: { trip(새 상태), events: [{type, seat?, text}] } — 이벤트는 음성 1회 안내·화면 배지용
  */
 export function tick(prev, signal) {
-  const t = structuredClone({ ...prev, announced: [...prev.announced] });
+  // announced 는 Set 이 정상이지만, 저장소에서 불러온 값이 배열·객체여도 멈추지 않게 한다
+  const ann = prev.announced instanceof Set || Array.isArray(prev.announced) ? [...prev.announced] : [];
+  const t = structuredClone({ ...prev, announced: ann });
   t.announced = new Set(t.announced);
   const events = [];
   const dt = signal.minutes ?? 1;
@@ -144,4 +146,14 @@ export function postureAdvice({ backrest, backrestMax, lumbar = null, sameMin = 
   if (lumbar === 0) tips.push("허리 받침을 조금 넣어 보세요");
   if (sameMin >= POSTURE.sameMinTip) tips.push("한 시간째 같은 자세예요. 다음에 멈추면 허리를 한번 펴 주세요");
   return { category, label, tips };
+}
+
+/**
+ * 안내 말풍선 수명 (2026-11-15 버그 수정: 말풍선이 계속 떠 있던 문제). 일시 안내는 반드시 스스로 사라진다.
+ * 기본 2.5초 + 글자당 60ms, 최소 3.5초 · 최대 7초. 화면·Android 가 같은 규칙을 쓴다.
+ */
+export const GUIDE = { minMs: 3500, maxMs: 7000, baseMs: 2500, perCharMs: 60 };
+export function guideMs(text) {
+  const n = [...String(text ?? "")].length;
+  return Math.min(GUIDE.maxMs, Math.max(GUIDE.minMs, GUIDE.baseMs + n * GUIDE.perCharMs));
 }

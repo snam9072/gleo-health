@@ -25,6 +25,8 @@ data class VehicleSnapshot(
     val gear: Gear = Gear.P,
     val seats: Map<Seat, SeatState> = mapOf(Seat.DRIVER to SeatState(occupied = true, buckled = true)),
     val posture: SeatPosture? = null,
+    /** 속도 신호를 한 번이라도 받았나 — 모르면 화면은 '주행 중'으로 보고 잠근다(fail closed, 감사 P1-3) */
+    val speedKnown: Boolean = false,
 )
 
 /** 차량 신호 공급원 — Pleos Vehicle SDK 구현과 시연용(수동) 구현을 같은 모양으로 쓴다. */
@@ -38,7 +40,7 @@ interface VehicleSource {
 class ManualVehicleSource : VehicleSource {
     override val name = "시연용 수동 신호"
     private var listener: ((VehicleSnapshot) -> Unit)? = null
-    var snapshot = VehicleSnapshot(posture = SeatPosture(backrest = 3, backrestMax = 9, lumbar = 0, lumbarMax = 4))
+    var snapshot = VehicleSnapshot(posture = SeatPosture(backrest = 3, backrestMax = 9, lumbar = 0, lumbarMax = 4), speedKnown = true)
         private set
 
     override fun start(onChange: (VehicleSnapshot) -> Unit) { listener = onChange; onChange(snapshot) }

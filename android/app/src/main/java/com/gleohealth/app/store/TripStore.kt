@@ -4,6 +4,9 @@ import com.gleohealth.app.engine.Seat
 import com.gleohealth.app.engine.SeatMinutes
 import com.gleohealth.app.engine.Trip
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -12,8 +15,9 @@ import javax.crypto.spec.GCMParameterSpec
  * 기기 안 기록 저장소 (P1·S4, 명세 D21).
  * - 저장하는 것은 '주행 요약'(Trip: 좌석별 착석·체결 분, 연속 운전 분 등)과 월 표시뿐. 초 단위 원자료·위치·시각은 없다.
  * - 파일 전체를 AES-GCM 으로 암호화한다. 키는 Android Keystore 안에 있어 앱 밖으로 꺼낼 수 없다(KeystoreSealer).
- * - 파일이 깨지거나 바뀌면(GCM 인증 실패) 앱이 죽지 않고 빈 기록으로 시작한다.
- * - 13개월이 지난 주행은 불러올 때 지운다.
+ * - 파일을 못 열면(깨짐·위변조·Keystore 오류) 한 번 더 시도하고, 그래도 안 되면 원본을 `trips.bin.bad-<시각>` 으로 옮겨 보존한 뒤
+ *   빈 기록으로 시작한다 — 빈 기록이 원본을 덮어쓰지 않는다(감사 P1-1).
+ * - 13개월 넘게 지난(14개월째) 주행은 불러올 때 지운다(명세 D21 예시). 시계가 뒤로 가거나 24개월 넘게 앞으로 튀면 아무것도 지우지 않는다(P1-2).
  */
 data class StoredTrip(val month: String, val trip: Trip)
 
@@ -66,23 +70,35 @@ class TripStore(
     /** 불러오기. 없거나 깨졌으면 빈 기록. 달이 바뀌었으면 지난 주행을 끝난 주행으로 넘긴다. */
     fun load(): Ledger {
         val month = nowMonth()
-        val raw = runCatching { if (file.exists()) LedgerCodec.decode(String(sealer.open(file.readBytes()), Charsets.UTF_8)) else null }
-            .getOrNull() ?: return Ledger(month)
+        if (!file.exists()) return Ledger(month)
+        val read = { LedgerCodec.decode(String(sealer.open(file.readBytes()), Charsets.UTF_8)) }
+        val raw = runCatching(read).recoverCatching { read() }.getOrNull()
+        if (raw == null) { quarantine(); return Ledger(month) }
         return rollOver(raw, month)
+    }
+
+    /** 못 연 파일을 지우지 않고 옆으로 옮겨 둔다(나중에 키가 돌아오면 복구할 수 있게). */
+    private fun quarantine() {
+        runCatching { file.renameTo(File(file.parentFile, "${file.name}.bad-${System.currentTimeMillis()}-${System.nanoTime()}")) }
     }
 
     /** 저장. 암호문만 임시 파일에 쓰고 이름을 바꿔 교체한다(쓰는 중 꺼져도 이전 파일이 남는다). */
     fun save(ledger: Ledger) {
         val bytes = sealer.seal(LedgerCodec.encode(ledger).toByteArray(Charsets.UTF_8))
         val tmp = File(file.parentFile, file.name + ".new")
-        tmp.writeBytes(bytes)
-        if (!tmp.renameTo(file)) { file.delete(); tmp.renameTo(file) }
+        FileOutputStream(tmp).use { it.write(bytes); it.fd.sync() } // 디스크에 쓴 뒤에 바꾼다(P2-2)
+        runCatching { Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE) }
+            .getOrElse { Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING) }
     }
 
     companion object {
         const val KEEP_MONTHS = 13
+        const val MAX_CLOCK_JUMP_MONTHS = 24
 
         fun rollOver(l: Ledger, month: String): Ledger {
+            // 차량 시계가 부팅 직후 2000-01 처럼 되돌아가거나 터무니없이 앞으로 가면 기록을 건드리지 않는다(P1-2)
+            val gap = monthsBetween(l.month, month)
+            if (gap < 0 || gap > MAX_CLOCK_JUMP_MONTHS) return l
             var out = l
             if (l.month != month) {
                 val done = if (l.current.minutes > 0) l.finished + StoredTrip(l.month, l.current) else l.finished

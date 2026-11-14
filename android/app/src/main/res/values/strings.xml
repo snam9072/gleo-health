@@ -31,4 +31,5 @@
     <string name="card_month">이번 달</string>
     <string name="posture_unavailable">이 차는 시트 위치를 알려 주지 않아요. 휴식 안내로 대신 챙길게요.</string>
     <string name="guide_label">글리오</string>
+    <string name="speed_unknown">속도를 확인하는 중이에요</string>
 </resources>

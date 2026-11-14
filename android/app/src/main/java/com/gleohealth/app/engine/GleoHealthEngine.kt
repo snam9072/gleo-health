@@ -160,3 +160,12 @@ object Posture {
         return PostureAdvice(category, label, tips)
     }
 }
+
+/** 안내 말풍선 수명 — mvp/engine.js guideMs 와 같은 규칙. 일시 안내는 반드시 스스로 사라진다(2026-11-15 버그 수정). */
+object Guide {
+    const val MIN_MS = 3_500L
+    const val MAX_MS = 7_000L
+    private const val BASE_MS = 2_500L
+    private const val PER_CHAR_MS = 60L
+    fun durationMs(text: String): Long = (BASE_MS + text.codePointCount(0, text.length) * PER_CHAR_MS).coerceIn(MIN_MS, MAX_MS)
+}

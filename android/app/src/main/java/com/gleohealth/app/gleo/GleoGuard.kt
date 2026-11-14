@@ -28,13 +28,30 @@ object GleoGuard {
 
     private val lastHandled = mutableMapOf<String, Long>()
 
-    /** 같은 함수 요청이 2초 안에 다시 오면 false. */
+    /**
+     * 같은 보낸 앱의 같은 함수 요청이 2초 안에 다시 오면 false.
+     * 보낸 앱별로 따로 센다 — 한 앱이 계속 보내도 Gleo 의 요청 자리를 빼앗지 못한다(감사 P1-7). 표는 64개까지만 둔다.
+     */
     @Synchronized
-    fun allow(action: String, nowMs: Long): Boolean {
-        val last = lastHandled[action]
+    fun allow(action: String, sender: String, nowMs: Long): Boolean {
+        val key = "$sender|$action"
+        val last = lastHandled[key]
         if (last != null && nowMs - last in 0 until MIN_INTERVAL_MS) return false
-        lastHandled[action] = nowMs
+        if (lastHandled.size >= 64) lastHandled.clear()
+        lastHandled[key] = nowMs
         return true
+    }
+
+    /** ACTION_PARAM 이 JSON 객체 문자열이든, 그것을 한 번 더 문자열로 감싼 것이든 객체로 읽는다(감사 P2-7). 4KB 넘으면 무시. */
+    fun parseParams(raw: String?): org.json.JSONObject? {
+        if (raw == null || raw.length > 4096) return null
+        return runCatching {
+            when (val v = org.json.JSONTokener(raw).nextValue()) {
+                is org.json.JSONObject -> v
+                is String -> org.json.JSONObject(v)
+                else -> null
+            }
+        }.getOrNull()
     }
 
     @Synchronized

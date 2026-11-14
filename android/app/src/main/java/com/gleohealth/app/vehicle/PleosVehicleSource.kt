@@ -27,7 +27,7 @@ import kotlin.math.roundToInt
 class PleosVehicleSource(private val context: Context) : VehicleSource {
     override val name = "Pleos Vehicle SDK"
 
-    private val vehicle = Vehicle(context)
+    private val vehicle by lazy { Vehicle(context) } // 지원 확인 뒤에만 만든다(P1-5)
     private var car: Car? = null
     private var props: CarPropertyManager? = null
     private var listener: ((VehicleSnapshot) -> Unit)? = null
@@ -42,11 +42,16 @@ class PleosVehicleSource(private val context: Context) : VehicleSource {
         Seat.REAR_RIGHT to SeatValue.ROW_2_RIGHT,
     )
 
-    fun isSupported(): Boolean = runCatching { Car.createCar(context) != null }.getOrDefault(false)
+    /** 확인용 Car 연결은 바로 끊는다 — 확인할 때마다 연결이 쌓이던 누수(감사 P1-5) */
+    fun isSupported(): Boolean = runCatching { Car.createCar(context)?.let { it.disconnect(); true } ?: false }.getOrDefault(false)
 
+    /** SDK 콜백이 여러 스레드에서 와도 갱신을 잃지 않게 직렬화하고, 바뀐 게 없으면 알리지 않는다(감사 P1-9·P2-1) */
+    @Synchronized
     private fun emit(update: (VehicleSnapshot) -> VehicleSnapshot) {
-        snapshot = update(snapshot)
-        listener?.invoke(snapshot)
+        val next = update(snapshot)
+        if (next == snapshot) return
+        snapshot = next
+        listener?.invoke(next)
     }
 
     private fun setSeat(seat: Seat, f: (SeatState) -> SeatState) =
@@ -110,7 +115,7 @@ class PleosVehicleSource(private val context: Context) : VehicleSource {
             when (value.propertyId) {
                 VehiclePropertyIds.PERF_VEHICLE_SPEED -> {
                     val kmh = ((value.value as? Float ?: 0f) * 3.6f).roundToInt().coerceAtLeast(0)
-                    emit { it.copy(speedKmh = kmh) }
+                    emit { it.copy(speedKmh = kmh, speedKnown = true) }
                 }
                 VehiclePropertyIds.GEAR_SELECTION -> {
                     val gear = when (value.value as? Int) {
@@ -139,7 +144,7 @@ class PleosVehicleSource(private val context: Context) : VehicleSource {
         runCatching { seatApi?.unregisterSeatLumbarForeAftPosition(driverArea, lumbarListener) }
         props?.unregisterCallback(propCallback)
         car?.disconnect()
-        vehicle.release()
+        runCatching { vehicle.release() }
         listener = null
     }
 

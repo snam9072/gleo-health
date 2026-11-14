@@ -268,7 +268,7 @@
 </aside>
 
 <script type="module">
-import { SEATS, SEAT_NAMES, newTrip, tick, tripScore, monthlyReport, canOpenDashboard, RULES, postureAdvice } from "./engine.js";
+import { SEATS, SEAT_NAMES, newTrip, tick, tripScore, monthlyReport, canOpenDashboard, RULES, postureAdvice, guideMs } from "./engine.js";
 
 const $ = (id) => document.getElementById(id);
 const state = {
@@ -282,21 +282,35 @@ const state = {
 // v0.2 기록 유지(P1): 실제 앱은 Keystore 키로 AES-GCM 암호화 저장. 시뮬레이터는 브라우저 저장소에 같은 요약만 둔다.
 const KEY = "gleo-health-sim-v0.3";
 const video = new URLSearchParams(location.search).has("scene");
-function save() { if (video) return; try { localStorage.setItem(KEY, JSON.stringify({ trip: state.trip, monthTrips: state.monthTrips, consent: state.consent, seats: state.seats, clockMin: state.clockMin, posture: state.posture, restCount: state.restCount })); } catch {} }
+function save() { if (video) return; try { localStorage.setItem(KEY, JSON.stringify({ trip: { ...state.trip, announced: [...state.trip.announced] }, monthTrips: state.monthTrips, consent: state.consent, seats: state.seats, clockMin: state.clockMin, posture: state.posture, restCount: state.restCount })); } catch {} }
 function restore() {
   if (video) return false;
   try { const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (!d || !d.trip) return false;
+    // Set 은 JSON 으로 저장되지 않으므로 배열로 저장하고 여기서 되살린다 (2026-11-15 버그: 다시 켠 뒤 tick 이 멈춤)
+    // 모양이 맞지 않는 저장값은 버린다 — 화면이 멈추거나 이상한 값이 그려지지 않게(감사 P2-12)
+    const okTrip = (t) => t && Number.isFinite(t.minutes) && t.seatMin && SEATS.every((k) => t.seatMin[k] && Number.isFinite(t.seatMin[k].occupied) && Number.isFinite(t.seatMin[k].buckled));
+    const num = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
+    if (!okTrip(d.trip) || !(d.monthTrips || []).every(okTrip)) return false;
+    if (d.posture && !(num(d.posture.backrest, 0, d.posture.backrestMax) && num(d.posture.lumbar, 0, d.posture.lumbarMax) && num(d.posture.backrestMax, 1, 50) && num(d.posture.lumbarMax, 1, 50) && num(d.posture.sameMin, 0, 100000))) delete d.posture;
+    if (!num(d.restCount, 0, 1000)) d.restCount = 0;
+    d.trip.announced = new Set(Array.isArray(d.trip.announced) ? d.trip.announced : []);
+    d.monthTrips = (d.monthTrips || []).map((t) => ({ ...t, announced: new Set(Array.isArray(t.announced) ? t.announced : []) }));
     Object.assign(state, { trip: d.trip, monthTrips: d.monthTrips || [], consent: !!d.consent, seats: d.seats || state.seats, clockMin: d.clockMin || state.clockMin, posture: d.posture || state.posture, restCount: d.restCount || 0 }); return true;
   } catch { return false; }
 }
 const hm = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
 const signal = (minutes) => ({ minutes, speedKmh: state.speed, gear: state.gear, seats: state.seats });
 
+// 안내 말풍선은 이 함수 하나로만 띄운다. 일시 안내라 guideMs(text) 뒤 스스로 사라진다
+// (2026-11-15 버그 수정: 타이머가 없어 다음 안내가 올 때까지 계속 떠 있었다). 영상 캡처(?scene=N)만 고정.
+let guideTimer = 0;
 function say(text, reply) {
+  clearTimeout(guideTimer);
   $("bubbleText").textContent = text;
   $("bubble").classList.toggle("show", !!text);
   $("reply").textContent = reply ?? "";
   $("reply").classList.toggle("show", !!reply);
+  if (text && !video) guideTimer = setTimeout(() => say(""), guideMs(text) + (reply ? 1500 : 0));
 }
 
 function advance(minutes) {
@@ -398,14 +412,14 @@ document.addEventListener("click", (ev) => {
     state.posture[k] = Math.min(max, Math.max(0, state.posture[k] + Number(b.dataset.d))); state.posture.sameMin = 0; render(); }
   if (b.id === "gP") { state.gear = "P"; state.speed = 0; advance(0); }
   if (b.id === "gD") { state.gear = "D"; if (!state.speed) state.speed = 30; advance(0); }
-  if (b.id === "reset") { state.monthTrips.push(state.trip); state.trip = newTrip(); state.restCount = 0; state.posture.sameMin = 0; say(""); render(); }
+  if (b.id === "reset") { /* 달리지 않은 주행은 세지 않는다(감사 P2-12) */ if (state.trip.minutes > 0) state.monthTrips.push(state.trip); state.trip = newTrip(); state.restCount = 0; state.posture.sameMin = 0; say(""); render(); }
   if (b.dataset.gleo === "check") {
     const occ = SEATS.filter((k) => state.seats[k].occupied); const open = occ.filter((k) => !state.seats[k].buckled);
     say(open.length ? `${open.map((k) => SEAT_NAMES[k]).join(", ")} 벨트가 풀려 있어요` : `${occ.length}명 모두 벨트 맸어요`, "글리오, 자리·벨트 점검해 줘");
   }
   if (b.dataset.gleo === "score") { const m = monthlyReport([...state.monthTrips, state.trip], { consent: false }); say(`이번 주행 ${tripScore(state.trip).total}점, 이번 달 ${m.monthScore}점이에요. ${m.eligible ? "보험 할인 대상이에요" : "80점부터 할인 대상이에요"}`, "내 글리오 헬스 점수 알려 줘"); }
   if (b.dataset.gleo === "rest") say("내비에서 휴게소 검색 화면을 열었어요. 들를 곳을 골라 주세요", "쉴 곳 찾아 줘");
-  if (b.id === "relaunch") { save(); location.reload(); }
+  if (b.id === "relaunch") { save(); try { sessionStorage.setItem("gleo-relaunch", "1"); } catch {} location.reload(); }
   if (b.id === "wipe") { try { localStorage.removeItem(KEY); } catch {} location.reload(); }
   if (b.id === "dash") { const r = canOpenDashboard(signal(0)); say(r.ok ? "정차 중이라 대시보드를 열었어요" : r.text); }
 });
@@ -448,7 +462,12 @@ const scenes = {
 const params = new URLSearchParams(location.search);
 const scene = Number(params.get("scene"));
 if (scene && scenes[scene]) { document.body.classList.add("video"); state.view = scene === 12 ? "home" : "seat"; scenes[scene](); render(); if (scene === 9) say(""); }
-else { if (restore() && (state.trip.minutes > 0 || state.monthTrips.length)) { log("앱을 다시 켰어요 — 이번 달 기록을 불러왔습니다"); say("앱을 다시 켜도 이번 달 기록이 그대로예요"); } state.gear = "P"; state.speed = 0; render(); }
+else {
+  // 기록 유지 안내는 '앱 끄고 다시 켜기'를 눌렀을 때만 한 번 (그냥 열 때마다 띄우지 않는다)
+  let relaunched = false; try { relaunched = sessionStorage.getItem("gleo-relaunch") === "1"; sessionStorage.removeItem("gleo-relaunch"); } catch {}
+  if (restore() && relaunched && (state.trip.minutes > 0 || state.monthTrips.length)) { log("앱을 다시 켰어요 — 이번 달 기록을 불러왔습니다"); say("앱을 다시 켜도 이번 달 기록이 그대로예요"); }
+  state.gear = "P"; state.speed = 0; render();
+}
 </script>
 </body>
 </html>
