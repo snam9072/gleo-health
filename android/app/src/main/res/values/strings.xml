@@ -8,4 +8,11 @@
     <string name="locked">정차 후 볼 수 있어요</string>
     <string name="consent">점수만 보험사와 공유 (할인에만 사용)</string>
     <string name="sim_title">시연용 신호 (에뮬레이터 Virtual Console 대용)</string>
+    <string name="service_channel">주행 기록</string>
+    <string name="service_text">안전벨트와 연속 운전 시간을 기록하고 있어요</string>
+    <string name="people_title">사람 · 오늘의 탑승 건강</string>
+    <string name="car_title">차 · 상태</string>
+    <string name="car_soon">배터리 · 타이어 · 경고등 카드가 2차 버전에서 이 자리에 들어옵니다.
+지금은 사람 축(안전벨트 · 휴식)을 먼저 완성했어요. 차 신호를 읽는 권한과 화면은 에뮬레이터에서 확인한 뒤 붙입니다.</string>
+    <string name="saved_note">기록은 이 차 안에만 암호화해 저장돼요 · 13개월 보관</string>
 </resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 암호화 기록(trips.bin)은 기기 밖으로 백업·이전하지 않는다 (S4·D21). 키가 Keystore 에 있어 옮겨도 열 수 없다. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="." />
+    </device-transfer>
+</data-extraction-rules>

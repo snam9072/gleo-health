@@ -14,13 +14,21 @@
 | 동의 기반 보험 연계 | 동의한 운전자만 월 점수와 할인 대상 여부만 공유(원자료 없음), 할인에만 사용 | — |
 | Gleo 앱 연동 | "자리·벨트 점검해 줘" · "내 글리오 헬스 점수" · "쉴 곳 찾아 줘" | Gleo Interface `assets/schema.json` (함수 3개), Callback `APP_ACTION_RESPONSE` |
 
-디자인은 Pleos Connect UI Design Guide 다크 테마 토큰(`res/values/colors.xml`)과 Gleo 말풍선 색을 그대로 씁니다.
+디자인은 Pleos Connect UI Design Guide 다크 테마 토큰(`res/values/colors.xml`)과 Gleo 말풍선 색을 그대로 씁니다. 화면은 왼쪽 **사람** · 오른쪽 **차** 두 축이며, 차 축(배터리·타이어·경고등)은 다음 버전에 모듈로 들어옵니다.
+
+## 플랫폼 기반과 보안 (v0.2.0)
+| 항목 | 내용 |
+|---|---|
+| 기록 코어 · 백그라운드 기록 | `core/HealthCore.kt` 하나를 화면·서비스·Gleo 수신기가 함께 본다. `core/HealthService.kt` 가 화면을 닫아도 1분마다 기록하고, 정차 30분 + 화면 꺼짐이면 스스로 멈춘다 |
+| 암호화 저장 | `store/TripStore.kt` — 주행 요약만(초 단위 원자료·위치 없음) AES-GCM 으로 저장, 키는 Android Keystore. 깨지거나 바뀐 파일은 빈 기록으로 시작, 13개월 보관, 백업·기기 이전 제외 |
+| Gleo 수신기 보호 | `gleo/GleoGuard.kt` — 보낸 앱이 신원을 공유하면 시스템 앱만 허용, 같은 함수 2초에 1번, 응답은 시스템 앱 수신기를 찾으면 그 앱에만, 응답 내용은 최소값. 신원을 공유하지 않는 요청까지 막는 엄격 모드(`GLEO_STRICT_SENDER`)는 에뮬레이터에서 Gleo 동작을 확인한 뒤 켠다 |
+| 릴리스 빌드 | R8 축소·난독화·리소스 축소, 릴리스 진단 로그 제거, 디버깅 끔 |
 
 ## 저장소 구성
 | 경로 | 내용 |
 |---|---|
-| `android/` | Android(Kotlin) 앱 — 엔진 `engine/GleoHealthEngine.kt`, 차량 연동 `vehicle/PleosVehicleSource.kt`, Gleo 수신기 `gleo/GleoActionReceiver.kt` |
-| `android/app/src/test/` | 엔진 단위 테스트 (명세 경계값: 2시간/15분, 80점, 점수 예시 100·80·93.3) |
+| `android/` | Android(Kotlin) 앱 — 엔진 `engine/GleoHealthEngine.kt`, 기록 코어 `core/`, 암호화 저장 `store/`, 차량 연동 `vehicle/PleosVehicleSource.kt`, Gleo 수신기 `gleo/` |
+| `android/app/src/test/` | 단위 테스트 14개 — 엔진(명세 경계값: 2시간/15분, 80점, 점수 예시 100·80·93.3), 저장소(재시작 유지·평문 없음·위변조·13개월), Gleo 보호 규칙 |
 | `mvp/` | 같은 규칙의 JavaScript 엔진 + 브라우저 시뮬레이터(시연 영상 원본) |
 | `apk/` | 실행 가능한 release APK |
 
@@ -41,9 +49,9 @@ cd android
 |---|---|
 | Pleos Connect Emulator | **v2.1.0** (system image `system-images;android-34;pleos_car_emulator;x86_64`) |
 | 화면 규격 | **에뮬레이터 기본 디스플레이 2560×1440, 대각 12.8인치, mdpi, 가로** (devices.xml 'Pleos Connect v2.1.0' 기준). 분할 화면·세로 레이아웃도 대응 |
-| Android | minSdk 28, target/compile 34, Kotlin 1.9, AGP 8.5, Gradle 8.7, JDK 17 |
+| Android | minSdk 34 (Pleos Connect 전용), target/compile 34, Kotlin 1.9, AGP 8.5, Gradle 8.7, JDK 17 |
 | Pleos SDK | Vehicle 2.3.2, TextToSpeech 3.3.1, NaviHelper 3.0.5 (`https://nexus-playground.pleos.ai/repository/maven-releases/`) |
-| 권한 | `pleos.car.permission.CAR_SEATS` · `CAR_SAFETY` · `CAR_DRIVE` (조회만, 시트 제어 권한은 선언하지 않음), `android.car.permission.CAR_SPEED` · `CAR_POWERTRAIN` |
+| 권한 | `pleos.car.permission.CAR_SEATS` · `CAR_SAFETY` · `CAR_DRIVE` (조회만, 시트 제어 권한은 선언하지 않음), `android.car.permission.CAR_SPEED` · `CAR_POWERTRAIN`, `FOREGROUND_SERVICE` · `FOREGROUND_SERVICE_SPECIAL_USE` (주행 기록) |
 | 외부 키·서버 | 없음 (점수는 기기 안에서만 계산) |
 
 ## APK 위치
