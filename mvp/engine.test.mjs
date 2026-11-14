@@ -93,7 +93,7 @@ test("D7: 예시 100 / 80.0 / 93.3", () => {
   assert.equal(s3.total, 93.3);
 });
 
-test("D8·D11: 동의 없으면 전송 없음, 79.9 대상 아님·80.0 대상, 보내는 건 점수와 대상 여부뿐", () => {
+test("D8·D11·D-10: 동의 없으면 전송 없음, 80점이어도 벨트 75면 기준 미달, 보내는 건 점수와 대상 여부뿐", () => {
   const t80 = run(newTrip(), [
     ...repeat(drive(seats({ PASSENGER: { occupied: true, buckled: false } })), 30),
     ...repeat(drive(seats({ PASSENGER: { occupied: true, buckled: true } })), 30),
@@ -101,16 +101,23 @@ test("D8·D11: 동의 없으면 전송 없음, 79.9 대상 아님·80.0 대상, 
   assert.equal(monthlyReport([t80], { consent: false }).payload, null);
   const m = monthlyReport([t80], { consent: true });
   assert.equal(m.monthScore, 80);
-  assert.equal(m.eligible, true);
+  assert.equal(m.monthBelt, 75);
+  assert.equal(m.eligible, false);
   assert.deepEqual(Object.keys(m.payload).sort(), ["eligible", "monthScore"]);
-  // 79.9 쪽: 조수석 미착용 시간을 1분 늘림
-  const t79 = run(newTrip(), [
-    ...repeat(drive(seats({ PASSENGER: { occupied: true, buckled: false } })), 31),
-    ...repeat(drive(seats({ PASSENGER: { occupied: true, buckled: true } })), 29),
-  ]).trip;
-  const m2 = monthlyReport([t79], { consent: true });
-  assert.ok(m2.monthScore < 80);
-  assert.equal(m2.eligible, false);
+});
+
+test("D-10 경계: 벨트 95.0 충족·94.2 미달, 휴식 90.2 충족·89.6 미달, 3시간 무휴식 93.3점은 미달", () => {
+  const open = drive(seats({ PASSENGER: { occupied: true, buckled: false } }));
+  const ok = drive(seats({ PASSENGER: { occupied: true, buckled: true } }));
+  const a = monthlyReport([run(newTrip(), [...repeat(open, 6), ...repeat(ok, 54)]).trip], { consent: false });
+  assert.equal(a.monthBelt, 95); assert.equal(a.eligible, true);
+  const b = monthlyReport([run(newTrip(), [...repeat(open, 7), ...repeat(ok, 53)]).trip], { consent: false });
+  assert.equal(b.monthBelt, 94.2); assert.equal(b.eligible, false);
+  assert.equal(monthlyReport([run(newTrip(), repeat(drive(seats()), 133)).trip], { consent: false }).eligible, true);
+  const c = monthlyReport([run(newTrip(), repeat(drive(seats()), 134)).trip], { consent: false });
+  assert.equal(c.monthRest, 89.6); assert.equal(c.eligible, false);
+  const d = monthlyReport([run(newTrip(), repeat(drive(seats()), 180)).trip], { consent: false });
+  assert.equal(d.monthScore, 93.3); assert.equal(d.eligible, false);
 });
 
 test("D9: 주행 중 대시보드는 열지 않음", () => {

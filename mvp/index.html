@@ -367,7 +367,7 @@ function render() {
   // 운전 자세 (웰니스, D25·D28) — 주행 중엔 한 줄만
   const pz = state.posture; const adv = postureAdvice({ backrest: pz.backrest, backrestMax: pz.backrestMax, lumbar: pz.lumbar, sameMin: pz.sameMin });
   const stepBar = (v, max) => `<div class="bar"><i style="width:${Math.round((v / max) * 100)}%"></i></div>`;
-  $("postureBody").innerHTML = `<div class="pose"><span class="big">${adv.label}</span><span style="color:var(--muted)">같은 자세 ${hm(pz.sameMin)}</span></div>` +
+  $("postureBody").innerHTML = `<div class="pose"><span class="big">${adv.label}</span><span style="color:var(--muted)">시트 그대로 ${hm(pz.sameMin)}</span></div>` +
     (moving ? "" : `<div class="steps"><div class="sbar"><span>등받이</span>${stepBar(pz.backrest, pz.backrestMax)}<span>${pz.backrest}/${pz.backrestMax}</span></div>
       <div class="sbar"><span>허리 받침</span>${stepBar(pz.lumbar, pz.lumbarMax)}<span>${pz.lumbar}/${pz.lumbarMax}</span></div></div>`) +
     (adv.tips.length ? `<div class="tip">${moving ? adv.tips[adv.tips.length - 1] : adv.tips.join("<br>")}</div>` : `<div class="tip">지금 자세 좋아요</div>`);
@@ -380,9 +380,8 @@ function render() {
     (bars ? `<div style="margin-top:8px;font-size:15px;color:var(--muted)">좌석별 벨트 맨 시간</div>${bars}` : "");
   // 이번 달
   const trips = state.monthTrips.length + (state.trip.minutes > 0 ? 1 : 0);
-  const gap = Math.max(0, Math.round((RULES.discountThreshold - m.monthScore) * 10) / 10);
   $("monthBody").innerHTML = `<div class="kv"><span>주행</span><b>${trips}번</b></div><div class="kv"><span>점수</span><b>${m.monthScore}점</b></div>` +
-    `<div class="tip">${m.eligible ? "이번 달 보험 할인 받아요" : `할인까지 ${gap}점 남았어요`}${state.consent ? " · 점수만 보험사에 보내요" : " · 보험사에는 안 보내요"}</div>`;
+    `<div class="tip">${m.eligible ? "보험 제휴 기준 넘었어요 (시뮬레이션)" : `벨트 ${RULES.beltGate}점·휴식 ${RULES.restGate}점을 넘어야 해요 (지금 ${m.monthBelt}·${m.monthRest})`}${state.consent ? " · 제휴되면 점수만 보내요" : " · 보험사에는 안 보내요"}</div>`;
   $("tileSeat").textContent = open.length ? `${open.join(", ")} 벨트 풀림` : `${occ}명 착용 · 쉬기까지 ${left > 0 ? hm(left) : "지금"}`;
   // 화면 전환
   $("home").hidden = state.view !== "home"; $("seatView").hidden = state.view !== "seat";
@@ -420,7 +419,7 @@ document.addEventListener("click", (ev) => {
     const occ = SEATS.filter((k) => state.seats[k].occupied); const open = occ.filter((k) => !state.seats[k].buckled);
     say(open.length ? `${open.map((k) => SEAT_NAMES[k]).join(", ")} 벨트가 풀려 있어요` : `${occ.length}명 모두 벨트 맸어요`, "글리오, 자리·벨트 점검해 줘");
   }
-  if (b.dataset.gleo === "score") { const m = monthlyReport([...state.monthTrips, state.trip], { consent: false }); say(`이번 주행 ${tripScore(state.trip).total}점, 이번 달 ${m.monthScore}점이에요. ${m.eligible ? "보험 할인 대상이에요" : "80점부터 할인 대상이에요"}`, "내 글리오 헬스 점수 알려 줘"); }
+  if (b.dataset.gleo === "score") { const m = monthlyReport([...state.monthTrips, state.trip], { consent: false }); say(`이번 주행 ${tripScore(state.trip).total}점, 이번 달 ${m.monthScore}점이에요. ${m.eligible ? "보험 제휴 기준을 넘었어요" : `벨트 ${RULES.beltGate}점·휴식 ${RULES.restGate}점을 넘어야 해요`}`, "내 글리오 헬스 점수 알려 줘"); }
   if (b.dataset.gleo === "rest") say("내비에서 휴게소 검색 화면을 열었어요. 들를 곳을 골라 주세요", "쉴 곳 찾아 줘");
   if (b.id === "relaunch") { save(); try { sessionStorage.setItem("gleo-relaunch", "1"); } catch {} location.reload(); }
   if (b.id === "wipe") { try { localStorage.removeItem(KEY); } catch {} location.reload(); }
@@ -434,18 +433,19 @@ const S = (o) => Object.fromEntries(SEATS.map((k) => [k, { occupied: !!o[k], buc
 const FAMILY_UNBUCKLED = S({ DRIVER: "b", PASSENGER: "b", REAR_LEFT: "b", REAR_RIGHT: "o" });
 const FAMILY_OK = S({ DRIVER: "b", PASSENGER: "b", REAR_LEFT: "b", REAR_RIGHT: "b" });
 function play(steps) { // steps: [gear, speed, seats, minutes]
-  for (const [g, sp, st, min] of steps) { state.gear = g; state.speed = sp; state.seats = structuredClone(st); for (let i = 0; i < min; i++) { const r = tick(state.trip, signal(1)); state.trip = r.trip; state.clockMin++; state.events.push(...r.events); } }
+  for (const [g, sp, st, min] of steps) { state.gear = g; state.speed = sp; state.seats = structuredClone(st); for (let i = 0; i < min; i++) { const r = tick(state.trip, signal(1)); state.trip = r.trip; state.clockMin++; state.events.push(...r.events); for (const e of r.events) if (e.type === "REST_OK") state.restCount += 1; } }
 }
 function slide(html) { $("slide").innerHTML = html; $("slide").classList.add("show"); }
 function caption(t) { $("captionText").textContent = t; $("caption").classList.toggle("show", !!t); }
 const scenes = {
   1: () => slide(`<div style="display:flex;align-items:center;gap:22px"><span class="gleo-dot" style="width:56px;height:56px"></span><span style="font-size:30px;color:#B6C1F3">Pleos Connect · Gleo 앱</span></div>
-       <h1>글리오 헬스</h1><p>차가 좌석마다 안전벨트와 휴식을 챙기고,<br>그 기록을 운전자 동의 아래 보험 혜택으로 돌려줍니다.</p>`),
+       <h1>글리오 헬스</h1><p>Gleo가 사람과 차의 건강을 직접 챙겨 주게 돕는<br>Pleos의 첫 차량 헬스 케어 앱</p>
+       <p style="margin-top:18px;font-size:28px">사람 — 좌석·벨트·휴식 &nbsp;·&nbsp; 자동차 — 차량 상태·노면·관리 이력</p>`),
   2: () => slide(`<h1 style="font-size:56px">뒷좌석은 여전히 사각지대</h1>
-       <div class="stats"><div class="stat"><b>28~70%</b><span>뒷좌석 안전벨트 착용률<br>(조사 방식에 따라)</span></div>
+       <div class="stats"><div class="stat"><b>28%</b><span>뒷좌석 안전벨트 착용률<br>(요금소 72만 대 관측)</span></div>
        <div class="stat"><b>2.8~3.7배</b><span>미착용 시 치사율<br>(앞좌석·뒷좌석)</span></div>
        <div class="stat"><b>82분</b><span>수도권 하루 통근 시간<br>(전국 73.9분)</span></div></div>
-       <p class="src">출처: 삼성화재 교통안전문화연구소·교통문화지수(2025), 한국도로공사, 통계청 실험적 통계(2024)</p>`),
+       <p class="src">출처: 삼성화재 교통안전문화연구소(2025), 한국도로공사, 통계청 실험적 통계(2024)</p>`),
   3: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1]]); caption("가족 4명 탑승 · 뒷좌석 오른쪽 벨트 미착용 · P단에서는 알리지 않습니다"); },
   4: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1]]); say("뒷좌석 오른쪽, 벨트 매 주세요"); caption("출발하는 순간, 좌석 이름으로 한 번만 — 경고음은 순정 기능이 맡습니다"); },
   5: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 80, FAMILY_OK, 3]]); caption("4석 모두 착용 — 착석한 좌석의 벨트 체결 시간을 기록합니다"); },
@@ -453,14 +453,19 @@ const scenes = {
   7: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 15]]); say("잘 쉬었어요. 다시 2시간 셀게요"); caption("휴게소에서 P단 15분 이상 → 휴식 인정"); },
   8: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 16], ["P", 0, FAMILY_OK, 1]]); say("출발 전에 원래 운전 자세로 돌려 드릴까요?", "응"); caption("휴식 뒤 P단·벨트 체결일 때만 제안 — 시트 메모리 호출은 권한 승인 뒤 (지금은 안내만, 주행 중엔 움직이지 않음)"); },
   9: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); state.consent = true; caption("도착 · 정차 중에만 점수 확인 — 벨트 × 0.8 + 휴식 × 0.2"); },
-  10: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); state.consent = true; say("이번 달 글리오 헬스 점수는 " + monthlyReport([state.trip], { consent: true }).monthScore + "점이에요. 보험 할인 대상이에요"); caption("보험 연계(기획): 동의한 운전자만 · 월 점수와 할인 대상 여부만 · 할인에만 사용 — 앱은 보낼 내용만 만듭니다"); },
+  10: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); state.consent = true; say("이번 달 " + monthlyReport([state.trip], { consent: true }).monthScore + "점이에요. 보험 제휴 기준을 넘었어요"); caption("보험 제휴 시뮬레이션 — 벨트 95점·휴식 90점을 모두 넘어야 기준 충족 · 동의하면 점수와 충족 여부만 · 지금 앱은 차 밖으로 보내지 않습니다"); },
   11: () => { state.clockMin = 18 * 60 + 5; play([["P", 0, FAMILY_OK, 1]]); say("4명 모두 벨트 맸어요", "글리오, 자리·벨트 점검해 줘"); caption("Gleo 앱 연동 — 자리·벨트 점검 · 점수 · 쉴 곳 찾기 (함수 3개)"); },
   12: () => { state.clockMin = 18 * 60 + 10; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); say("앱을 다시 켜도 이번 달 기록이 그대로예요"); caption("홈 — 사람(좌석·공기·마인드)과 차(노면·차량 정보). 지금은 좌석이 열려 있고, 기록은 차 안에만 암호화해 남습니다"); },
-  13: () => slide(`<h1 style="font-size:56px">Pleos Connect SDK 로 만듭니다</h1>
-       <p>Vehicle SDK — 좌석 착석·안전벨트·시트 메모리·주행 시간 · NaviHelper — 휴게소 검색<br>TextToSpeech — 한 번의 음성 안내 · Gleo Interface — 음성으로 앱 기능 실행</p>
-       <p style="margin-top:20px"><b style="color:#fff">보안</b> 기록 AES-GCM 암호화(Keystore 키) · Gleo 요청 확인·빈도 제한 · 응답은 최소값만</p>
-       <p><b style="color:#fff">초기 수익</b> 보험사 B2B(점수 API · 할인 특약) → 렌트·구독·법인차 리포트 → 블루핸즈 연계</p>
-       <p><b style="color:#fff">로드맵</b> 글리오 헬스 플랫폼 = 사람(벨트·휴식·혼잡·공기) + 차(배터리·타이어·경고등)</p>`),
+  13: () => slide(`<h1 style="font-size:56px">자동차의 건강 — 다음 단계</h1>
+       <p><b style="color:#fff">차량 상태</b> 배터리·타이어·경고등을 쉬운 말로 — 블루링크 진단을 Gleo 로 묻는 입구 (다음 버전)</p>
+       <p><b style="color:#fff">노면 정보</b> 현대차 차량 신호로 찾은 도로 패임을 '도로 지점'으로 → 지자체·지도앱 (현대차 협력 필요)</p>
+       <p><b style="color:#fff">관리 인증</b> 보유 기간 전체의 관리 기록 → 인증중고차 연계, 차주 월 구독 (제휴·검증 필요)</p>
+       <p class="src">앱이 바퀴 진동을 직접 읽지는 않습니다. 감지는 현대차 차량 데이터, 글리오는 결과를 보여 주는 창입니다.</p>`),
+  14: () => slide(`<h1 style="font-size:56px">Pleos Connect SDK 로 만듭니다</h1>
+       <p>Vehicle SDK — 좌석 착석·안전벨트·시트 위치·주행 시간 · NaviHelper — 휴게소 검색<br>TextToSpeech — 한 번의 음성 안내 · Gleo Interface — 음성으로 앱 기능 실행</p>
+       <p style="margin-top:20px"><b style="color:#fff">보안</b> 기록 AES-GCM 암호화(Keystore 키) · 인터넷 권한 없음 · Gleo 요청 확인·빈도 제한</p>
+       <p><b style="color:#fff">수익(가정, 검증 전)</b> 보험 제휴 점수 · 노면 데이터 · 관리 인증 구독</p>
+       <p><b style="color:#fff">로드맵</b> 사람(벨트·휴식·공기·마인드) + 자동차(차량 상태·노면·관리 인증)</p>`),
 };
 const params = new URLSearchParams(location.search);
 const scene = Number(params.get("scene"));

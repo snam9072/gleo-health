@@ -10,7 +10,9 @@ export const RULES = {
   restWeight: 0.2, // D7
   restSuggestAtMin: 120, // D5: 연속 운전 2시간
   restResetParkMin: 15, // D5: P단 15분 이상 정차 = 휴식
-  discountThreshold: 80, // D8: 월 점수 80 이상 할인 대상
+  // D8 → 결정 D-10(2026-11-15): 할인 판정은 벨트 95점 이상 AND 휴식 90점 이상 (월 점수 80점 기준의 허점 수정)
+  beltGate: 95,
+  restGate: 90,
   ergoTipAtMin: 60, // D6: 주행 1시간 뒤 에르고 모션 안내 1회
 };
 
@@ -111,15 +113,20 @@ export function tripScore(trip) {
   return { belt: round1(belt), rest: round1(rest), total: round1(total) };
 }
 
-/** D8 월 집계: 트립 점수를 주행 시간으로 가중 평균 → 할인 대상 여부. 동의 안 하면 전송 내용 없음, 동의해도 점수만. */
+/** D8 월 집계: 트립 점수를 주행 시간으로 가중 평균(표시용) + 벨트·휴식 두 조건으로 제휴 시뮬레이션 기준 판정(D-10). 동의 안 하면 전송 내용 없음, 동의해도 점수만. */
 export function monthlyReport(trips, { consent }) {
   const minutes = trips.reduce((a, t) => a + t.minutes, 0);
   const score = minutes ? trips.reduce((a, t) => a + tripScore(t).total * t.minutes, 0) / minutes : 100;
   const monthScore = round1(score);
-  const eligible = monthScore >= RULES.discountThreshold;
+  let occ = 0, buck = 0, over = 0;
+  for (const t of trips) { over += t.overLimitMin; for (const s of SEATS) { occ += t.seatMin[s].occupied; buck += t.seatMin[s].buckled; } }
+  const monthBelt = round1(occ ? (buck / occ) * 100 : 100);
+  const monthRest = round1(minutes ? (1 - over / minutes) * 100 : 100);
+  // eligible = 보험 제휴 시뮬레이션 기준 충족(실제 할인 확정이 아님)
+  const eligible = monthBelt >= RULES.beltGate && monthRest >= RULES.restGate;
   // D11: 기록은 할인에만 — 보험사에는 월 점수와 대상 여부만, 원자료(좌석별 분·시각)는 보내지 않는다.
   const payload = consent ? { monthScore, eligible } : null;
-  return { monthScore, eligible, payload };
+  return { monthScore, monthBelt, monthRest, eligible, payload };
 }
 
 /** D9 주행 중 화면 규칙 */
@@ -144,7 +151,7 @@ export function postureAdvice({ backrest, backrestMax, lumbar = null, sameMin = 
   if (category === "upright") tips.push("등받이를 한 칸 뒤로 눕히면 허리가 덜 힘들어요");
   if (category === "reclined") tips.push("너무 눕히면 어깨가 떠요. 어깨가 등받이에 닿을 만큼만 세워 보세요");
   if (lumbar === 0) tips.push("허리 받침을 조금 넣어 보세요");
-  if (sameMin >= POSTURE.sameMinTip) tips.push("한 시간째 같은 자세예요. 다음에 멈추면 허리를 한번 펴 주세요");
+  if (sameMin >= POSTURE.sameMinTip) tips.push("시트가 한 시간째 그대로예요. 다음에 멈추면 허리를 한번 펴 주세요");
   return { category, label, tips };
 }
 

@@ -107,7 +107,8 @@ class GleoActionReceiver : BroadcastReceiver() {
         val l = HealthCore.currentLedger()
         return if (period == "month") {
             val m = GleoHealthEngine.monthlyReport(l.monthTrips(), consent = false)
-            Reply("success", "This month's Gleo Health score is ${m.monthScore}. " + if (m.eligible) "It qualifies for the insurance discount." else "A score of 80 or more qualifies for the discount.",
+            Reply("success", "This month's Gleo Health score is ${m.monthScore}. " + if (m.eligible) "It meets the partner insurance simulation criteria: seat belts 95 or more and rest 90 or more."
+                else "The partner insurance simulation needs seat belts 95 or more and rest 90 or more. Now seat belts ${m.monthBelt}, rest ${m.monthRest}.",
                 JSONArray().put(JSONObject().put("monthScore", m.monthScore).put("eligible", m.eligible)))
         } else {
             val s = GleoHealthEngine.tripScore(l.current)

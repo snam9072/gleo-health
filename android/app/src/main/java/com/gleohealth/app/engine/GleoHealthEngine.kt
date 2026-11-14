@@ -31,7 +31,10 @@ object Rules {
     const val REST_WEIGHT = 0.2 // D7
     const val REST_SUGGEST_AT_MIN = 120 // D5
     const val REST_RESET_PARK_MIN = 15 // D5
-    const val DISCOUNT_THRESHOLD = 80.0 // D8
+    // D8 → 결정 D-10(2026-11-15): 할인 판정은 월 점수가 아니라 두 조건 모두 — 벨트 95점 이상 AND 휴식 90점 이상.
+    // (월 점수 80점 기준이면 조수석 30분 미착용 80점·3시간 무휴식 93.3점도 '할인 대상'이 되는 허점이 있었다)
+    const val BELT_GATE = 95.0
+    const val REST_GATE = 90.0
     const val ERGO_TIP_AT_MIN = 60 // D6
 }
 
@@ -57,7 +60,8 @@ data class Score(val belt: Double, val rest: Double, val total: Double)
 /** D11: 보험사에는 월 점수와 대상 여부만. 좌석별 분·시각 같은 원자료는 담지 않는다. */
 data class InsurerPayload(val monthScore: Double, val eligible: Boolean)
 
-data class MonthlyReport(val monthScore: Double, val eligible: Boolean, val payload: InsurerPayload?)
+/** eligible = 보험 제휴 시뮬레이션 기준 충족(실제 할인 확정이 아님). monthBelt·monthRest 는 한 달 전체의 좌석·분 기준 값. */
+data class MonthlyReport(val monthScore: Double, val monthBelt: Double, val monthRest: Double, val eligible: Boolean, val payload: InsurerPayload?)
 
 object GleoHealthEngine {
 
@@ -130,8 +134,12 @@ object GleoHealthEngine {
         val minutes = trips.sumOf { it.minutes }
         val score = if (minutes > 0) trips.sumOf { tripScore(it).total * it.minutes } / minutes else 100.0
         val month = round1(score)
-        val eligible = month >= Rules.DISCOUNT_THRESHOLD
-        return MonthlyReport(month, eligible, if (consent) InsurerPayload(month, eligible) else null)
+        val occ = trips.sumOf { t -> t.seatMin.values.sumOf { it.occupied } }
+        val buck = trips.sumOf { t -> t.seatMin.values.sumOf { it.buckled } }
+        val belt = round1(if (occ > 0) buck.toDouble() / occ * 100 else 100.0)
+        val rest = round1(if (minutes > 0) (1 - trips.sumOf { it.overLimitMin }.toDouble() / minutes) * 100 else 100.0)
+        val eligible = belt >= Rules.BELT_GATE && rest >= Rules.REST_GATE
+        return MonthlyReport(month, belt, rest, eligible, if (consent) InsurerPayload(month, eligible) else null)
     }
 
     /** D9 */
@@ -155,7 +163,7 @@ object Posture {
             if (category == "upright") add("등받이를 한 칸 뒤로 눕히면 허리가 덜 힘들어요")
             if (category == "reclined") add("너무 눕히면 어깨가 떠요. 어깨가 등받이에 닿을 만큼만 세워 보세요")
             if (lumbar == 0) add("허리 받침을 조금 넣어 보세요")
-            if (sameMin >= SAME_MIN_TIP) add("한 시간째 같은 자세예요. 다음에 멈추면 허리를 한번 펴 주세요")
+            if (sameMin >= SAME_MIN_TIP) add("시트가 한 시간째 그대로예요. 다음에 멈추면 허리를 한번 펴 주세요")
         }
         return PostureAdvice(category, label, tips)
     }

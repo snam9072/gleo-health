@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">글리오 헬스</string>
-    <string name="consent">점수만 보험사에 보내기 (할인에만 써요)</string>
+    <string name="consent">보험 제휴되면 점수만 보내기</string>
     <string name="sim_title">시연용 신호 (에뮬레이터 Virtual Console 대용)</string>
     <string name="service_channel">주행 기록</string>
     <string name="service_text">안전벨트와 연속 운전 시간을 기록하고 있어요</string>

@@ -395,7 +395,7 @@ class MainActivity : AppCompatActivity() {
             postureTip.text = getString(R.string.posture_unavailable)
         } else {
             val adv = Posture.advice(p.backrestRel!!, p.backrestSpan, if (p.lumbarSpan > 0) p.lumbarRel else null, HealthCore.postureSameMin)
-            postureLabel.text = "${adv.label}  ·  같은 자세 ${hm(HealthCore.postureSameMin)}"
+            postureLabel.text = "${adv.label}  ·  시트 그대로 ${hm(HealthCore.postureSameMin)}"
             postureSteps.text = if (moving) "" else "등받이 ${p.backrestRel}/${p.backrestSpan}" + (if (p.lumbarSpan > 0) "   허리 받침 ${p.lumbarRel}/${p.lumbarSpan}" else "")
             postureTip.text = when { adv.tips.isEmpty() -> "지금 자세 좋아요"; moving -> adv.tips.last(); else -> adv.tips.joinToString("\n") }
         }
@@ -424,8 +424,10 @@ class MainActivity : AppCompatActivity() {
         val month = GleoHealthEngine.monthlyReport(l.monthTrips(), l.consent)
         val trips = l.finished.count { it.month == l.month } + (if (l.current.minutes > 0) 1 else 0)
         monthText.text = "주행 ${trips}번 · ${month.monthScore}점"
-        val gapScore = Math.max(0.0, Math.round((Rules.DISCOUNT_THRESHOLD - month.monthScore) * 10) / 10.0)
-        monthTip.text = (if (month.eligible) "이번 달 보험 할인 받아요" else "할인까지 ${gapScore}점 남았어요") + (if (l.consent) " · 점수만 보험사에 보내요" else " · 보험사에는 안 보내요")
+        // D-10: '할인 확정'이 아니라 보험 제휴 시뮬레이션 — 벨트·휴식 두 조건을 따로 보여 준다
+        monthTip.text = (if (month.eligible) "보험 제휴 기준 넘었어요 (시뮬레이션)"
+            else "벨트 ${Rules.BELT_GATE.toInt()}점·휴식 ${Rules.REST_GATE.toInt()}점을 넘어야 해요 (지금 ${month.monthBelt}·${month.monthRest})") +
+            (if (l.consent) " · 제휴되면 점수만 보내요" else " · 보험사에는 안 보내요")
         consent.visibility = if (locked != null) View.GONE else View.VISIBLE
         if (consent.isChecked != l.consent) consent.isChecked = l.consent
     }
