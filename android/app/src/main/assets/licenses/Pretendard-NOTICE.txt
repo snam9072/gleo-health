@@ -1,0 +1,5 @@
+Pretendard
+Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard)
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+License text: https://openfontlicense.org (OFL-1.1) / https://github.com/orioncactus/pretendard/blob/main/LICENSE
+Used unmodified in Gleo Health for in-app guide bubbles.

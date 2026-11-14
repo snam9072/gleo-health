@@ -55,6 +55,7 @@ cd android
 | Pleos SDK | Vehicle 2.3.2, TextToSpeech 3.3.1, NaviHelper 3.0.5 (`https://nexus-playground.pleos.ai/repository/maven-releases/`) |
 | 권한 | `pleos.car.permission.CAR_SEATS` · `CAR_SAFETY` · `CAR_DRIVE` (조회만, 시트 제어 권한은 선언하지 않음), `android.car.permission.CAR_SPEED` · `CAR_POWERTRAIN`, `FOREGROUND_SERVICE` · `FOREGROUND_SERVICE_SPECIAL_USE` (주행 기록) |
 | 외부 키·서버 | 없음 (점수는 기기 안에서만 계산) |
+| 글꼴 | 안내 말풍선에 Pretendard(© Kil Hyung-jin, SIL Open Font License 1.1) 포함 — `android/app/src/main/assets/licenses/Pretendard-NOTICE.txt` |
 
 ## APK 위치
 `apk/` 폴더 (파일명 규칙: `팀명_앱이름_release.apk`). 용량 초과 시 GitHub Releases 링크를 씁니다.

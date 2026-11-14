@@ -21,6 +21,7 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.gleohealth.app.core.HealthCore
 import com.gleohealth.app.core.HealthService
 import com.gleohealth.app.engine.Event
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var soonPanel: TextView
     private lateinit var tileSeatSub: TextView
     private lateinit var bubble: TextView
+    private lateinit var bubbleBox: View
     private lateinit var driveState: TextView
     private lateinit var beltSummary: TextView
     private lateinit var restTime: TextView
@@ -67,7 +69,7 @@ class MainActivity : AppCompatActivity() {
     private val wide get() = resources.configuration.screenWidthDp >= 1200
 
     private val onState: () -> Unit = { render() }
-    private val onEvent: (Event) -> Unit = { e -> bubble.text = e.text; bubble.visibility = View.VISIBLE }
+    private val onEvent: (Event) -> Unit = { e -> bubble.text = e.text; bubbleBox.visibility = View.VISIBLE }
     private val back = object : OnBackPressedCallback(false) { override fun handleOnBackPressed() = show(seat = false) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -131,15 +133,29 @@ class MainActivity : AppCompatActivity() {
     private fun buildUi(): View {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(32), dp(22), dp(32), dp(22)); setBackgroundColor(c(R.color.background_secondary)) }
         driveState = text(17f).apply { setPadding(dp(14), dp(7), dp(14), dp(7)); background = round(c(R.color.surface_accent), 10) }
-        bubble = text(22f, Color.WHITE).apply {
-            setPadding(dp(26), dp(16), dp(26), dp(16)); visibility = View.GONE
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c(R.color.gleo_bubble_primary), c(R.color.gleo_bubble_secondary))).apply { cornerRadius = dp(24).toFloat() }
+        // 안내 말풍선 — 토스 스타일(마스터 지시 2026-11-15): 단색 파랑, 장식 없음, Pretendard 굵게·좁은 자간
+        val bold = ResourcesCompat.getFont(this, R.font.pretendard_bold)
+        val regular = ResourcesCompat.getFont(this, R.font.pretendard_regular)
+        bubble = text(25f, Color.WHITE).apply { typeface = bold; letterSpacing = -0.02f; setLineSpacing(0f, 1.2f) }
+        bubbleBox = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; visibility = View.GONE
+            setPadding(dp(18), dp(18), dp(26), dp(18)); elevation = dp(8).toFloat()
+            background = round(c(R.color.guide_blue), 24)
+            addView(ImageView(context).apply {
+                setImageResource(R.drawable.ic_tile_seat); imageTintList = ColorStateList.valueOf(Color.WHITE)
+                setPadding(dp(10), dp(10), dp(10), dp(10)); background = round(Color.argb(46, 255, 255, 255), 14)
+            }, LinearLayout.LayoutParams(dp(44), dp(44)).apply { rightMargin = dp(16) })
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(text(15f, Color.argb(199, 255, 255, 255)).apply { text = getString(R.string.guide_label); typeface = regular; letterSpacing = -0.02f })
+                addView(bubble)
+            })
         }
         homeView = buildHome()
         seatView = buildSeat()
         root.addView(homeView)
         root.addView(seatView)
-        root.addView(bubble, gap(14))
+        root.addView(bubbleBox, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { topMargin = dp(14) })
         simPanel = buildSimPanel().apply { visibility = View.GONE }
         root.addView(simPanel)
         return ScrollView(this).apply { addView(root) }
@@ -275,7 +291,7 @@ class MainActivity : AppCompatActivity() {
             button("P 정차") { HealthCore.manual.update { it.copy(gear = Gear.P, speedKmh = 0) } },
             button("D 60km/h") { HealthCore.manual.update { it.copy(gear = Gear.D, speedKmh = 60) } },
             *listOf(1, 10, 15, 60).map { m -> button("+${m}분") { HealthCore.tick(m) } }.toTypedArray(),
-            button("새 주행") { HealthCore.newTrip(); bubble.visibility = View.GONE },
+            button("새 주행") { HealthCore.newTrip(); bubbleBox.visibility = View.GONE },
         ))
         p.addView(row(
             button("등받이 세우기") { pose(-1, 0) }, button("등받이 눕히기") { pose(1, 0) },

@@ -22,4 +22,7 @@
     <color name="gleo_bubble_primary">#545F93</color>
     <color name="gleo_bubble_secondary">#3E4976</color>
     <color name="gleo_bubble_speaker">#B6C1F3</color>
+    <!-- 안내 말풍선 — 토스 스타일 파랑 (마스터 지시 2026-11-15) -->
+    <color name="guide_blue">#3182F6</color>
+    <color name="reply_chip">#2C2F36</color>
 </resources>

@@ -11,8 +11,8 @@ android {
         applicationId = "com.gleohealth.app"
         minSdk = 34 // 실행 대상은 Pleos Connect(AAOS API 34)뿐. Pleos 최소 요건(28, 사이닝 키 로테이션)을 넘고, Gleo 발신자 신원 확인 API(34)를 모든 지원 기기에서 쓸 수 있다 (review r4 R-1)
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.3.1"
+        versionCode = 5
+        versionName = "0.3.2"
         // S1 엄격 모드: 신원을 모르는 Gleo 요청까지 거부. 에뮬레이터에서 Gleo 의 신원 공유를 확인한 뒤 true (마스터 결정 2026-11-14)
         buildConfigField("boolean", "GLEO_STRICT_SENDER", "false")
     }
