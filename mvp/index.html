@@ -31,42 +31,65 @@
   .drive-state { padding: 6px 14px; border-radius: 8px; background: var(--panel2); color: var(--muted); }
   .drive-state.moving { color: #fff; background: var(--line); }
   /* 본문 */
-  .main { display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+  .main { display: grid; grid-template-columns: 240px 1fr; min-height: 0; }
   .driving { border-right: 1px solid var(--panel2); padding: 28px; display: flex; flex-direction: column; gap: 22px; background: var(--bg); }
-  .speed { font-size: 96px; font-weight: 800; line-height: 1; }
+  .speed { font-size: 84px; font-weight: 800; line-height: 1; }
   .speed small { font-size: 22px; color: var(--muted); font-weight: 500; margin-left: 6px; }
   .gear { display: flex; gap: 10px; font-size: 26px; font-weight: 700; }
   .gear span { color: var(--idle); } .gear span.on { color: #fff; }
   .meta { color: var(--muted); font-size: 18px; line-height: 1.7; }
   .meta b { color: var(--text); }
-  .app { padding: 28px 36px; display: grid; grid-template-columns: 1.05fr 1fr; grid-template-rows: auto 1fr; gap: 22px; min-height: 0; }
+  .main { overflow: auto; }
+  .driving { min-width: 0; }
+  /* v0.2: 사람 축(좌석·휴식·점수) + 차 축(2차 버전 자리) — Android MainActivity 와 같은 구성 */
+  .app { padding: 24px 32px; display: grid; grid-template-columns: 1.05fr 1fr 0.85fr; grid-auto-rows: auto; gap: 18px 22px; min-height: 0; align-content: start; }
+  .axis { font-size: 18px; font-weight: 700; margin: 0; }
+  .axis-people { grid-column: 1 / 3; color: var(--ok); } .axis-car { color: var(--accent); }
+  .car-col { grid-column: 3; grid-row: 3; }
+  .app > .card, .app > .right-col { align-self: start; min-height: auto; }
+  .app { align-self: start; } /* 내용 높이대로 — 화면보다 길면 본문이 스크롤된다 */
+  .car-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--panel2); font-size: 19px; }
+  .car-row:last-of-type { border-bottom: none; }
+  .tag { font-size: 13px; color: var(--gleo-speaker); background: var(--panel2); border-radius: 8px; padding: 4px 10px; }
+  .car-note { color: var(--muted); font-size: 15px; line-height: 1.6; margin: 12px 0 0; }
+  .ver { font-size: 14px; color: var(--gleo-speaker); background: var(--panel2); border-radius: 8px; padding: 3px 10px; }
+  .saved { color: var(--idle); font-size: 13px; margin-top: 10px; }
+  /* 좁은 화면(분할·세로): 차 축은 사람 축 아래로 */
+  @media (max-width: 1700px) {
+    .app { grid-template-columns: 1.05fr 1fr; }
+    .axis-people { grid-column: 1 / -1; }
+    .axis-car { grid-column: 1 / -1; grid-row: 4; }
+    .car-col { grid-column: 1 / -1; grid-row: 5; }
+    .car-col .rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 24px; }
+    .car-row { border-bottom: none; }
+  }
   .app-title { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; }
   .app-title h1 { margin: 0; font-size: 34px; }
   .app-title .sub { color: var(--muted); font-size: 18px; }
   .card { background: var(--panel); border: 1px solid var(--panel2); border-radius: 22px; padding: 24px; min-height: 0; }
   .card h2 { margin: 0 0 14px; font-size: 20px; color: var(--muted); font-weight: 600; }
   /* 좌석 지도 */
-  .car { position: relative; width: 300px; height: 430px; margin: 4px auto 0; border-radius: 120px 120px 70px 70px; background: var(--bg); border: 2px solid var(--line); }
+  .car { position: relative; width: 280px; height: 400px; margin: 4px auto 0; border-radius: 120px 120px 70px 70px; background: var(--bg); border: 2px solid var(--line); }
   body.video .seat { transition: none; }
-  .seat { position: absolute; width: 112px; height: 120px; text-align: center; border-radius: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 16px; border: 2px solid transparent; transition: all .3s; }
+  .seat { position: absolute; width: 104px; height: 112px; text-align: center; border-radius: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 16px; border: 2px solid transparent; transition: all .3s; }
   .seat .ico { font-size: 34px; }
   .seat.empty { background: var(--panel2); color: var(--idle); }
   .seat.ok { background: rgba(0,224,116,.14); border-color: var(--ok); color: #fff; }
   .seat.warn { background: rgba(255,76,40,.16); border-color: var(--warn); color: #fff; animation: pulse 1.2s infinite; }
   @keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(255,76,40,.15); } }
-  #DRIVER { left: 30px; top: 70px; } #PASSENGER { right: 30px; top: 70px; }
-  #REAR_LEFT { left: 30px; top: 250px; } #REAR_RIGHT { right: 30px; top: 250px; }
+  #DRIVER { left: 28px; top: 64px; } #PASSENGER { right: 28px; top: 64px; }
+  #REAR_LEFT { left: 28px; top: 232px; } #REAR_RIGHT { right: 28px; top: 232px; }
   .belt-summary { text-align: center; margin-top: 14px; font-size: 20px; }
   /* 휴식 링 */
   .rest { display: flex; gap: 26px; align-items: center; }
-  .ring { width: 170px; height: 170px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+  .ring { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; position: relative; }
   .ring .inner { position: absolute; inset: 16px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; text-align: center; }
   .ring .t { font-size: 34px; font-weight: 800; } .ring .l { font-size: 14px; color: var(--muted); }
   .rest-text { font-size: 18px; color: var(--muted); line-height: 1.6; }
   .rest-text b { color: var(--text); }
   /* 점수 */
   .score { display: flex; align-items: center; gap: 24px; }
-  .score .big { font-size: 80px; font-weight: 800; }
+  .score .big { font-size: 68px; font-weight: 800; }
   .score .big small { font-size: 24px; color: var(--muted); }
   .bars { flex: 1; display: grid; gap: 12px; font-size: 17px; }
   .bar { height: 12px; border-radius: 6px; background: var(--panel2); overflow: hidden; }
@@ -126,7 +149,9 @@
       <div class="meta">이번 주행 <b id="tripMin">0분</b><br>연속 운전 <b id="contMin">0분</b><br>탑승 <b id="occ">1명</b></div>
     </aside>
     <section class="app">
-      <div class="app-title"><h1>글리오 헬스</h1><span class="sub">탑승자 모두의 안전벨트와 휴식</span></div>
+      <div class="app-title"><h1>글리오 헬스</h1><span class="sub">탑승자 모두의 안전벨트와 휴식</span><span class="ver">v0.2</span></div>
+      <h2 class="axis axis-people">사람 · 오늘의 탑승 건강</h2>
+      <h2 class="axis axis-car">차 · 상태</h2>
       <div class="card">
         <h2>좌석 · 안전벨트</h2>
         <div class="car">
@@ -148,7 +173,16 @@
         <div class="card" id="scoreCard">
           <h2>글리오 헬스 점수</h2>
           <div id="scoreBody"></div>
+          <div class="saved" id="savedNote">기록은 이 차 안에만 암호화해 저장돼요 · 13개월 보관</div>
         </div>
+      </div>
+      <div class="card car-col">
+        <div class="rows">
+          <div class="car-row"><span>배터리</span><span class="tag">2차</span></div>
+          <div class="car-row"><span>타이어 공기압</span><span class="tag">2차</span></div>
+          <div class="car-row"><span>경고등 · 소모품</span><span class="tag">2차</span></div>
+        </div>
+        <p class="car-note">배터리 · 타이어 · 경고등 카드가 2차 버전에서 이 자리에 들어옵니다. 지금은 사람 축(안전벨트 · 휴식)을 먼저 완성했어요. 차 신호를 읽는 권한과 화면은 에뮬레이터에서 확인한 뒤 붙입니다.</p>
       </div>
     </section>
   </div>
@@ -171,6 +205,10 @@
   <h3>보험 연계</h3>
   <div class="row"><label><input type="checkbox" id="consent"> 점수 공유에 동의</label></div>
   <div class="row"><button id="reset">새 주행</button><button id="dash">대시보드 열기</button></div>
+  <h3>Gleo 음성 (함수 3개)</h3>
+  <div class="row"><button data-gleo="check">자리·벨트 점검</button><button data-gleo="score">내 점수</button><button data-gleo="rest">쉴 곳 찾기</button></div>
+  <h3>앱 다시 켜기 (기록 유지 확인)</h3>
+  <div class="row"><button id="relaunch">앱 끄고 다시 켜기</button><button id="wipe">기록 지우기</button></div>
   <h3>이벤트 (음성 1회)</h3>
   <div class="log" id="log"></div>
 </aside>
@@ -184,6 +222,16 @@ const state = {
   seats: { DRIVER: { occupied: true, buckled: true }, PASSENGER: { occupied: false, buckled: false }, REAR_LEFT: { occupied: false, buckled: false }, REAR_RIGHT: { occupied: false, buckled: false } },
   consent: false, events: [], monthTrips: [], showScore: false,
 };
+// v0.2 기록 유지(P1): 실제 앱은 Keystore 키로 AES-GCM 암호화 저장. 시뮬레이터는 브라우저 저장소에 같은 요약만 둔다.
+const KEY = "gleo-health-sim-v0.2";
+const video = new URLSearchParams(location.search).has("scene");
+function save() { if (video) return; try { localStorage.setItem(KEY, JSON.stringify({ trip: state.trip, monthTrips: state.monthTrips, consent: state.consent, seats: state.seats, clockMin: state.clockMin })); } catch {} }
+function restore() {
+  if (video) return false;
+  try { const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (!d || !d.trip) return false;
+    Object.assign(state, { trip: d.trip, monthTrips: d.monthTrips || [], consent: !!d.consent, seats: d.seats || state.seats, clockMin: d.clockMin || state.clockMin }); return true;
+  } catch { return false; }
+}
 const hm = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
 const signal = (minutes) => ({ minutes, speedKmh: state.speed, gear: state.gear, seats: state.seats });
 
@@ -244,6 +292,7 @@ function render() {
     <button data-seat="${k}" data-f="buckled" class="${state.seats[k].buckled ? "on" : ""}">벨트</button></div>`).join("");
   $("gP").classList.toggle("on", state.gear === "P"); $("gD").classList.toggle("on", state.gear === "D");
   $("spd").value = state.speed; $("spdV").textContent = state.speed; $("consent").checked = state.consent;
+  save();
 }
 
 // 콘솔 이벤트
@@ -254,6 +303,14 @@ document.addEventListener("click", (ev) => {
   if (b.id === "gP") { state.gear = "P"; state.speed = 0; advance(0); }
   if (b.id === "gD") { state.gear = "D"; if (!state.speed) state.speed = 30; advance(0); }
   if (b.id === "reset") { state.monthTrips.push(state.trip); state.trip = newTrip(); say(""); render(); }
+  if (b.dataset.gleo === "check") {
+    const occ = SEATS.filter((k) => state.seats[k].occupied); const open = occ.filter((k) => !state.seats[k].buckled);
+    say(open.length ? `안전벨트를 매지 않은 좌석: ${open.map((k) => SEAT_NAMES[k]).join(", ")}` : `${occ.length}석 모두 착석했고 모두 벨트를 맸어요`, "글리오, 자리·벨트 점검해 줘");
+  }
+  if (b.dataset.gleo === "score") { const m = monthlyReport([...state.monthTrips, state.trip], { consent: false }); say(`이번 주행 ${tripScore(state.trip).total}점, 이번 달 ${m.monthScore}점이에요. ${m.eligible ? "보험 할인 대상이에요" : "80점부터 할인 대상이에요"}`, "내 글리오 헬스 점수 알려 줘"); }
+  if (b.dataset.gleo === "rest") say("내비에서 휴게소 검색 화면을 열었어요. 들를 곳을 골라 주세요", "쉴 곳 찾아 줘");
+  if (b.id === "relaunch") { save(); location.reload(); }
+  if (b.id === "wipe") { try { localStorage.removeItem(KEY); } catch {} location.reload(); }
   if (b.id === "dash") { const r = canOpenDashboard(signal(0)); say(r.ok ? "정차 중이라 대시보드를 열었어요" : r.text); }
 });
 $("spd").addEventListener("input", (e) => { state.speed = Number(e.target.value); if (state.speed > 0 && state.gear === "P") state.gear = "D"; advance(0); });
@@ -293,7 +350,7 @@ const scenes = {
 const params = new URLSearchParams(location.search);
 const scene = Number(params.get("scene"));
 if (scene && scenes[scene]) { document.body.classList.add("video"); scenes[scene](); render(); if (scene === 9) say(""); }
-else render();
+else { if (restore() && (state.trip.minutes > 0 || state.monthTrips.length)) { log("앱을 다시 켰어요 — 이번 달 기록을 불러왔습니다"); say("앱을 다시 켜도 이번 달 기록이 그대로예요"); } state.gear = "P"; state.speed = 0; render(); }
 </script>
 </body>
 </html>
