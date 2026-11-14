@@ -31,7 +31,7 @@ class GleoHealthEngineTest {
         val r = run(t, listOf(drive(passengerOpen)).times(5))
         val belts = r.second.filter { it.type == EventType.BELT }
         assertEquals(1, belts.size)
-        assertEquals("조수석 안전벨트를 매 주세요", belts[0].text)
+        assertEquals("조수석, 벨트 매 주세요", belts[0].text)
         assertEquals(0, r.first.seatMin.getValue(Seat.REAR_LEFT).occupied)
     }
 
@@ -75,7 +75,7 @@ class GleoHealthEngineTest {
     }
 
     @Test fun d9_noDashboardWhileMoving() {
-        assertEquals("정차 후 볼 수 있어요", GleoHealthEngine.canOpenDashboard(drive(seats())))
+        assertEquals("멈추면 보여 드릴게요", GleoHealthEngine.canOpenDashboard(drive(seats())))
         assertNull(GleoHealthEngine.canOpenDashboard(park(seats())))
     }
 }

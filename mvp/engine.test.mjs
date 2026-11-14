@@ -36,7 +36,7 @@ test("D4: P단에선 알림 없음, 출발하면 좌석 이름 1회, 반복 없�
   r = run(r.trip, repeat(drive(s), 5));
   const belts = r.events.filter((e) => e.type === "BELT");
   assert.equal(belts.length, 1, "반복 음성 없음");
-  assert.equal(belts[0].text, "조수석 안전벨트를 매 주세요");
+  assert.equal(belts[0].text, "조수석, 벨트 매 주세요");
   assert.equal(r.trip.seatMin.REAR_LEFT.occupied, 0, "빈 좌석 기록 안 함");
   // 체결했다가 다시 풀면 한 번 더 안내
   r = run(r.trip, [drive(seats({ PASSENGER: { occupied: true, buckled: true } })), drive(s)]);
@@ -48,7 +48,7 @@ test("D5: 1:59 → 없음, 2:00 → 휴식 제안 1회, P단 14분 → 이어짐
   assert.equal(r.events.filter((e) => e.type === "REST").length, 0);
   r = run(r.trip, [drive(seats())]);
   assert.equal(r.events.filter((e) => e.type === "REST").length, 1);
-  assert.match(r.events.find((e) => e.type === "REST").text, /2시간째/);
+  assert.match(r.events.find((e) => e.type === "REST").text, /2시간 달렸어요/);
   r = run(r.trip, repeat(drive(seats()), 30));
   assert.equal(r.events.filter((e) => e.type === "REST").length, 0, "같은 구간 반복 제안 없음");
   r = run(r.trip, repeat(park(seats()), 14));
@@ -65,7 +65,7 @@ test("D2·D6: 휴식 뒤 P단·운전석 착석·체결에서만 자세 되돌�
   r = run(r.trip, [park(seats())]);
   const p = r.events.filter((e) => e.type === "POSTURE");
   assert.equal(p.length, 1);
-  assert.match(p[0].text, /저장된 운전 자세로 되돌릴까요/);
+  assert.match(p[0].text, /원래 운전 자세로 돌려 드릴까요/);
   assert.ok(!r.events.some((e) => /MOVE|SEAT_SET/.test(e.type)), "엔진은 시트를 직접 움직이지 않음");
   // 휴식 뒤 바로 출발하면 그 뒤엔 제안 없음
   let q = run(newTrip(), repeat(drive(seats()), 10));
@@ -114,6 +114,21 @@ test("D8·D11: 동의 없으면 전송 없음, 79.9 대상 아님·80.0 대상, 
 });
 
 test("D9: 주행 중 대시보드는 열지 않음", () => {
-  assert.deepEqual(canOpenDashboard({ speedKmh: 40, gear: "D" }), { ok: false, text: "정차 후 볼 수 있어요" });
+  assert.deepEqual(canOpenDashboard({ speedKmh: 40, gear: "D" }), { ok: false, text: "멈추면 보여 드릴게요" });
   assert.deepEqual(canOpenDashboard({ speedKmh: 0, gear: "P" }), { ok: true });
+});
+
+import { postureAdvice } from "./engine.js";
+test("D28: 등받이 단계 비율 경계 — 1/3 미만 세움, 2/3 초과 눕힘, 경계는 보통", () => {
+  assert.equal(postureAdvice({ backrest: 2, backrestMax: 10 }).label, "세움");
+  assert.equal(postureAdvice({ backrest: 3, backrestMax: 9 }).label, "보통"); // 정확히 1/3
+  assert.equal(postureAdvice({ backrest: 6, backrestMax: 9 }).label, "보통"); // 정확히 2/3
+  assert.equal(postureAdvice({ backrest: 7, backrestMax: 9 }).label, "눕힘");
+  assert.equal(postureAdvice({ backrest: 5, backrestMax: 9 }).tips.length, 0);
+});
+test("D28: 허리 받침 0단계·같은 자세 60분에서만 안내, 받침 없는 차(null)는 안내 없음", () => {
+  assert.equal(postureAdvice({ backrest: 5, backrestMax: 9, lumbar: 0 }).tips.length, 1);
+  assert.equal(postureAdvice({ backrest: 5, backrestMax: 9, lumbar: null }).tips.length, 0);
+  assert.equal(postureAdvice({ backrest: 5, backrestMax: 9, sameMin: 59 }).tips.length, 0);
+  assert.match(postureAdvice({ backrest: 5, backrestMax: 9, sameMin: 60 }).tips[0], /한 시간째/);
 });

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 단색 좌석 아이콘 (Pleos Iconography: Filled, 48dp 그리드) -->
+<!-- 글리오 헬스 앱 아이콘 (mvp/assets/icon.svg 와 같은 그림): 흰 좌석 + 초록 하트(사람 건강). 적응형 아이콘 안전 영역(가운데 66dp) 안에 둔다 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#B6C1F3"
-        android:pathData="M42,30a6,6 0,0 1,6 6v22l20,3.5a6,6 0,0 1,5 6V78a3,3 0,0 1,-3 3h-6v4a1.5,1.5 0,0 1,-3 0v-4H42a6,6 0,0 1,-6 -6V36a6,6 0,0 1,6 -6Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M41,30a6,6 0,0 1,6 6v19l17,3a6,6 0,0 1,5 6V74a2.5,2.5 0,0 1,-2.5 2.5h-5v4a1.7,1.7 0,0 1,-3.4 0v-4H41a6,6 0,0 1,-6 -6V36a6,6 0,0 1,6 -6Z" />
+    <path android:fillColor="#00E074"
+        android:pathData="M71,35c-2.8,-3 -7.5,-1.2 -7.5,2.5 0,3.8 5,6.8 7.5,8.8 2.5,-2 7.5,-5 7.5,-8.8 0,-3.7 -4.7,-5.5 -7.5,-2.5Z" />
 </vector>

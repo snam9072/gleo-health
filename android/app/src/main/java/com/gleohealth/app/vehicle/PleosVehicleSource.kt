@@ -10,7 +10,9 @@ import android.util.Log
 import ai.pleos.playground.vehicle.Vehicle
 import ai.pleos.playground.vehicle.api.model.area.SeatArea
 import ai.pleos.playground.vehicle.constant.area.SeatValue
+import ai.pleos.playground.vehicle.listener.SeatBackrestAnglePositionListener
 import ai.pleos.playground.vehicle.listener.SeatBeltBuckledStateListener
+import ai.pleos.playground.vehicle.listener.SeatLumbarForeAftPositionListener
 import ai.pleos.playground.vehicle.listener.SeatOccupancyListener
 import com.gleohealth.app.engine.Gear
 import com.gleohealth.app.engine.Seat
@@ -20,6 +22,7 @@ import kotlin.math.roundToInt
 /**
  * Pleos Vehicle SDK 2.3.2 로 좌석별 착석·안전벨트 체결을 구독하고(조회 권한만, 시트를 움직이지 않음 — D2),
  * AAOS 표준 CarPropertyManager 로 속도(PERF_VEHICLE_SPEED)·기어(GEAR_SELECTION)를 구독한다.
+ * 운전석 등받이·허리 받침 위치 단계도 구독한다(읽기만 — 운전 자세 카드, 명세 D25·D28). 지원하지 않으면 null 로 둔다.
  */
 class PleosVehicleSource(private val context: Context) : VehicleSource {
     override val name = "Pleos Vehicle SDK"
@@ -69,11 +72,37 @@ class PleosVehicleSource(private val context: Context) : VehicleSource {
             seatListeners += area to belt
         }
 
+        subscribePosture(seatApi)
+
         car = Car.createCar(context)
         props = car?.getCarManager(Car.PROPERTY_SERVICE) as? CarPropertyManager
         props?.registerCallback(propCallback, VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_ONCHANGE)
         props?.registerCallback(propCallback, VehiclePropertyIds.GEAR_SELECTION, CarPropertyManager.SENSOR_RATE_ONCHANGE)
         onChange(snapshot)
+    }
+
+    private val driverArea = SeatArea(SeatValue.ROW_1_LEFT)
+    private val backListener = object : SeatBackrestAnglePositionListener {
+        override fun onSeatBackrestAnglePositionUpdated(p0: Int?) = emit { s -> s.copy(posture = (s.posture ?: SeatPosture(null)).copy(backrest = p0)) }
+        override fun onFailed(p0: Exception) { Log.w(TAG, "backrest position unavailable") }
+    }
+    private val lumbarListener = object : SeatLumbarForeAftPositionListener {
+        override fun onSeatLumbarForeAftPositionUpdated(p0: Int?) = emit { s -> s.copy(posture = (s.posture ?: SeatPosture(null)).copy(lumbar = p0)) }
+        override fun onFailed(p0: Exception) { Log.w(TAG, "lumbar position unavailable") }
+    }
+
+    /** 범위(최소~최대 단계)를 먼저 받고, 바뀔 때마다 위치를 받는다. 실패하면 자세 카드는 '이 차는 알려 주지 않아요'. */
+    private fun subscribePosture(seatApi: ai.pleos.playground.vehicle.api.Seat) {
+        runCatching {
+            seatApi.checkSeatBackrestAnglePositionCapabilities({ _, bounds ->
+                bounds[driverArea]?.let { b -> emit { s -> s.copy(posture = (s.posture ?: SeatPosture(null)).copy(backrestMin = b.minValue, backrestMax = b.maxValue)) } }
+            }, { Log.w(TAG, "backrest bounds unavailable") })
+            seatApi.checkSeatLumbarForeAftPositionCapabilities({ _, bounds ->
+                bounds[driverArea]?.let { b -> emit { s -> s.copy(posture = (s.posture ?: SeatPosture(null)).copy(lumbarMin = b.minValue, lumbarMax = b.maxValue)) } }
+            }, { Log.w(TAG, "lumbar bounds unavailable") })
+            seatApi.registerSeatBackrestAnglePosition(driverArea, backListener)
+            seatApi.registerSeatLumbarForeAftPosition(driverArea, lumbarListener)
+        }.onFailure { Log.w(TAG, "posture subscription unavailable") }
     }
 
     private val propCallback = object : CarPropertyManager.CarPropertyEventCallback {
@@ -106,6 +135,8 @@ class PleosVehicleSource(private val context: Context) : VehicleSource {
             }
         }
         seatListeners.clear()
+        runCatching { seatApi?.unregisterSeatBackrestAnglePosition(driverArea, backListener) }
+        runCatching { seatApi?.unregisterSeatLumbarForeAftPosition(driverArea, lumbarListener) }
         props?.unregisterCallback(propCallback)
         car?.disconnect()
         vehicle.release()

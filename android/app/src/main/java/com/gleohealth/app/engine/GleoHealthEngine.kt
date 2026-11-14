@@ -76,7 +76,7 @@ object GleoHealthEngine {
                 seatMin[seat] = m.copy(occupied = m.occupied + dt, buckled = m.buckled + if (st.buckled) dt else 0)
                 if (!st.buckled && seat !in announced) {
                     announced += seat
-                    events += Event(EventType.BELT, "${seat.label} 안전벨트를 매 주세요", seat)
+                    events += Event(EventType.BELT, "${seat.label}, 벨트 매 주세요", seat)
                 }
             }
         }
@@ -90,17 +90,17 @@ object GleoHealthEngine {
             t = t.copy(minutes = t.minutes + dt, continuousMin = cont, parkMin = 0, overLimitMin = t.overLimitMin + over)
             if (cont >= Rules.REST_SUGGEST_AT_MIN && !t.restSuggested) {
                 t = t.copy(restSuggested = true)
-                events += Event(EventType.REST, "${cont / 60}시간째 운전 중이에요. 다음 휴게소에 들를까요?")
+                events += Event(EventType.REST, "${cont / 60}시간 달렸어요. 다음 휴게소에서 쉬어 갈까요?")
             }
             if (t.minutes >= Rules.ERGO_TIP_AT_MIN && !t.ergoTipGiven) {
                 t = t.copy(ergoTipGiven = true)
-                events += Event(EventType.ERGO_TIP, "주행 1시간이 지났어요. 에르고 모션 시트를 켜 보세요")
+                events += Event(EventType.ERGO_TIP, "한 시간 달렸어요. 에르고 모션 켜 볼까요?")
             }
         } else if (s.parked) {
             t = t.copy(parkMin = t.parkMin + dt)
             if (t.parkMin >= Rules.REST_RESET_PARK_MIN && t.continuousMin > 0) {
                 t = t.copy(continuousMin = 0, restSuggested = false, restTaken = true, postureOffered = false)
-                events += Event(EventType.REST_OK, "휴식이 기록됐어요. 연속 운전 시간을 다시 셉니다")
+                events += Event(EventType.REST_OK, "잘 쉬었어요. 다시 2시간 셀게요")
             }
         }
 
@@ -108,7 +108,7 @@ object GleoHealthEngine {
         val driver = s.seats[Seat.DRIVER] ?: SeatState()
         if (t.restTaken && !t.postureOffered && s.parked && driver.occupied && driver.buckled) {
             t = t.copy(postureOffered = true)
-            events += Event(EventType.POSTURE, "다시 출발하기 전에, 저장된 운전 자세로 되돌릴까요?")
+            events += Event(EventType.POSTURE, "출발 전에 원래 운전 자세로 돌려 드릴까요?")
         }
         if (s.moving) t = t.copy(restTaken = false)
 
@@ -135,7 +135,28 @@ object GleoHealthEngine {
     }
 
     /** D9 */
-    fun canOpenDashboard(s: Signal): String? = if (s.moving) "정차 후 볼 수 있어요" else null
+    fun canOpenDashboard(s: Signal): String? = if (s.moving) "멈추면 보여 드릴게요" else null
 
     private fun round1(x: Double) = Math.round(x * 10) / 10.0
+}
+
+/** 운전 자세 안내 — 웰니스 수준 (명세 D25·D28, mvp/engine.js postureAdvice 와 같은 규칙). */
+data class PostureAdvice(val category: String, val label: String, val tips: List<String>)
+
+object Posture {
+    const val SAME_MIN_TIP = 60
+
+    /** backrest·backrestMax = 등받이 위치 단계와 최대값(단위 없음), lumbar = 허리 받침 단계(없는 차는 null) */
+    fun advice(backrest: Int, backrestMax: Int, lumbar: Int? = null, sameMin: Int = 0): PostureAdvice {
+        val r = if (backrestMax > 0) backrest.toDouble() / backrestMax else 0.5
+        val category = when { r < 1.0 / 3 -> "upright"; r > 2.0 / 3 -> "reclined"; else -> "normal" }
+        val label = mapOf("upright" to "세움", "normal" to "보통", "reclined" to "눕힘").getValue(category)
+        val tips = buildList {
+            if (category == "upright") add("등받이를 한 칸 뒤로 눕히면 허리가 덜 힘들어요")
+            if (category == "reclined") add("너무 눕히면 어깨가 떠요. 어깨가 등받이에 닿을 만큼만 세워 보세요")
+            if (lumbar == 0) add("허리 받침을 조금 넣어 보세요")
+            if (sameMin >= SAME_MIN_TIP) add("한 시간째 같은 자세예요. 다음에 멈추면 허리를 한번 펴 주세요")
+        }
+        return PostureAdvice(category, label, tips)
+    }
 }

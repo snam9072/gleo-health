@@ -52,7 +52,7 @@ export function tick(prev, signal) {
       if (st.buckled) t.seatMin[s].buckled += dt;
       else if (!t.announced.has(s)) {
         t.announced.add(s);
-        events.push({ type: "BELT", seat: s, text: `${SEAT_NAMES[s]} 안전벨트를 매 주세요` });
+        events.push({ type: "BELT", seat: s, text: `${SEAT_NAMES[s]}, 벨트 매 주세요` });
       }
     }
   }
@@ -65,12 +65,12 @@ export function tick(prev, signal) {
     if (t.continuousMin > RULES.restSuggestAtMin) t.overLimitMin += Math.min(dt, t.continuousMin - RULES.restSuggestAtMin);
     if (t.continuousMin >= RULES.restSuggestAtMin && !t.restSuggested) {
       t.restSuggested = true;
-      events.push({ type: "REST", text: `${Math.floor(t.continuousMin / 60)}시간째 운전 중이에요. 다음 휴게소에 들를까요?` });
+      events.push({ type: "REST", text: `${Math.floor(t.continuousMin / 60)}시간 달렸어요. 다음 휴게소에서 쉬어 갈까요?` });
     }
     // D6 에르고 모션 안내 1회
     if (t.minutes >= RULES.ergoTipAtMin && !t.ergoTipGiven) {
       t.ergoTipGiven = true;
-      events.push({ type: "ERGO_TIP", text: "주행 1시간이 지났어요. 에르고 모션 시트를 켜 보세요" });
+      events.push({ type: "ERGO_TIP", text: "한 시간 달렸어요. 에르고 모션 켜 볼까요?" });
     }
   } else if (parked) {
     t.parkMin += dt;
@@ -79,7 +79,7 @@ export function tick(prev, signal) {
       t.restSuggested = false;
       t.restTaken = true;
       t.postureOffered = false;
-      events.push({ type: "REST_OK", text: "휴식이 기록됐어요. 연속 운전 시간을 다시 셉니다" });
+      events.push({ type: "REST_OK", text: "잘 쉬었어요. 다시 2시간 셀게요" });
     }
   }
 
@@ -87,7 +87,7 @@ export function tick(prev, signal) {
   const driver = signal.seats?.DRIVER ?? {};
   if (t.restTaken && !t.postureOffered && parked && driver.occupied && driver.buckled) {
     t.postureOffered = true;
-    events.push({ type: "POSTURE", text: "다시 출발하기 전에, 저장된 운전 자세로 되돌릴까요?" });
+    events.push({ type: "POSTURE", text: "출발 전에 원래 운전 자세로 돌려 드릴까요?" });
   }
   if (moving) t.restTaken = false; // 다시 출발하면 제안 기회는 끝 (D6: 주행 중 제안 없음)
 
@@ -123,7 +123,25 @@ export function monthlyReport(trips, { consent }) {
 /** D9 주행 중 화면 규칙 */
 export function canOpenDashboard(signal) {
   const moving = signal.speedKmh > 0 && signal.gear !== "P";
-  return moving ? { ok: false, text: "정차 후 볼 수 있어요" } : { ok: true };
+  return moving ? { ok: false, text: "멈추면 보여 드릴게요" } : { ok: true };
 }
 
 const round1 = (x) => Math.round(x * 10) / 10;
+
+/**
+ * 운전 자세 안내 — 웰니스 수준 (명세 D25 '운전 자세 리포트', D28 경계값). 진단·요통 예방이라고 말하지 않는다.
+ * 시트 위치는 단위 없는 '단계'(Pleos Seat getCurrent…Position)라 각도로 바꾸지 않고, 등받이 단계의 비율로만 나눈다.
+ * 비율 < 1/3 → 세움, > 2/3 → 눕힘, 그 사이(경계 포함) → 보통. 허리 받침 0단계면 받침 안내, 같은 자세 60분 이상이면 펴 주기 안내.
+ */
+export const POSTURE = { sameMinTip: 60 };
+export function postureAdvice({ backrest, backrestMax, lumbar = null, sameMin = 0 }) {
+  const r = backrestMax > 0 ? backrest / backrestMax : 0.5;
+  const category = r < 1 / 3 ? "upright" : r > 2 / 3 ? "reclined" : "normal";
+  const label = { upright: "세움", normal: "보통", reclined: "눕힘" }[category];
+  const tips = [];
+  if (category === "upright") tips.push("등받이를 한 칸 뒤로 눕히면 허리가 덜 힘들어요");
+  if (category === "reclined") tips.push("너무 눕히면 어깨가 떠요. 어깨가 등받이에 닿을 만큼만 세워 보세요");
+  if (lumbar === 0) tips.push("허리 받침을 조금 넣어 보세요");
+  if (sameMin >= POSTURE.sameMinTip) tips.push("한 시간째 같은 자세예요. 다음에 멈추면 허리를 한번 펴 주세요");
+  return { category, label, tips };
+}

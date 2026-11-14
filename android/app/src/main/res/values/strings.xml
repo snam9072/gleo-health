@@ -1,18 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">글리오 헬스</string>
-    <string name="app_sub">탑승자 모두의 안전벨트와 휴식</string>
-    <string name="seats_title">좌석 · 안전벨트</string>
-    <string name="rest_title">휴식 페이스메이커</string>
-    <string name="score_title">글리오 헬스 점수</string>
-    <string name="locked">정차 후 볼 수 있어요</string>
-    <string name="consent">점수만 보험사와 공유 (할인에만 사용)</string>
+    <string name="consent">점수만 보험사에 보내기 (할인에만 써요)</string>
     <string name="sim_title">시연용 신호 (에뮬레이터 Virtual Console 대용)</string>
     <string name="service_channel">주행 기록</string>
     <string name="service_text">안전벨트와 연속 운전 시간을 기록하고 있어요</string>
-    <string name="people_title">사람 · 오늘의 탑승 건강</string>
-    <string name="car_title">차 · 상태</string>
-    <string name="car_soon">배터리 · 타이어 · 경고등 카드가 2차 버전에서 이 자리에 들어옵니다.
-지금은 사람 축(안전벨트 · 휴식)을 먼저 완성했어요. 차 신호를 읽는 권한과 화면은 에뮬레이터에서 확인한 뒤 붙입니다.</string>
-    <string name="saved_note">기록은 이 차 안에만 암호화해 저장돼요 · 13개월 보관</string>
+    <string name="saved_note">기록은 이 차에만 남아요 · 13개월 뒤 지워져요</string>
+    <string name="home_title">GLIO Health</string>
+    <string name="home_sub">사람과 차, 차 안에서 함께 챙겨요</string>
+    <string name="axis_people">human · 사람</string>
+    <string name="axis_car">car · 차</string>
+    <string name="tile_seat">좌석</string>
+    <string name="tile_air">공기 상태</string>
+    <string name="tile_mind">마인드</string>
+    <string name="tile_road">노면 정보</string>
+    <string name="tile_battery">차량 정보</string>
+    <string name="tile_battery_sub">배터리 · 다음 버전</string>
+    <string name="next_version">다음 버전</string>
+    <string name="soon_air">공기 상태 — 막히는 길에서 바깥 공기가 들어오는지, 창을 닫고 오래 달렸는지 보고 환기할 때를 알려 줘요. 공조 신호를 읽는 권한을 확인한 뒤 열어요.</string>
+    <string name="soon_mind">마인드 — 오래 막힌 길, 밤 운전, 긴 운전 뒤에 잠깐 숨 돌릴 때를 알려 줘요. 의료 기능이 아니라 쉬어 가기 안내예요.</string>
+    <string name="soon_road">노면 정보 — 여러 차가 지난 길의 패임·결빙 구간을 미리 알려 줘요. 차량 센서는 앱이 바로 읽을 수 없어 현대차 데이터와 연결해 열어요.</string>
+    <string name="soon_battery">차량 정보 — 배터리·타이어·경고등을 쉬운 말로 풀고 충전소·블루핸즈 찾기로 이어 줘요. 차량 신호 권한을 확인한 뒤 열어요.</string>
+    <string name="back_home">홈으로</string>
+    <string name="seat_sub">안전벨트 · 휴식 · 자세</string>
+    <string name="card_belt">안전벨트</string>
+    <string name="card_rest">휴식</string>
+    <string name="card_score">이번 주행 점수</string>
+    <string name="card_posture">운전 자세</string>
+    <string name="card_trip">이번 주행</string>
+    <string name="card_month">이번 달</string>
+    <string name="posture_unavailable">이 차는 시트 위치를 알려 주지 않아요. 휴식 안내로 대신 챙길게요.</string>
 </resources>

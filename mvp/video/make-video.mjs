@@ -15,23 +15,27 @@ const narration = {
   1: "글리오 헬스. 좌석마다 안전벨트와 휴식을 챙기고, 보험 혜택으로 돌려줍니다.",
   2: "뒷좌석 착용률은 28에서 70퍼센트. 안 매면 치사율이 최대 3.7배입니다.",
   3: "가족 네 명 탑승. 정차 중에는 알리지 않습니다.",
-  4: "출발하면 좌석 이름으로 한 번만. 뒷좌석 오른쪽 안전벨트를 매 주세요.",
+  4: "출발하면 좌석 이름으로 한 번만. 뒷좌석 오른쪽, 벨트 매 주세요.",
   5: "모두 착용. 좌석별 체결 시간을 기록합니다.",
-  6: "두 시간째 운전 중이에요. 휴게소에 들를까요? 말 한마디로 경유지 추가.",
+  6: "두 시간 달렸어요. 다음 휴게소에서 쉬어 갈까요? 말 한마디로 휴게소 검색.",
   7: "15분 넘게 쉬면 휴식으로 인정합니다.",
-  8: "출발 전, 저장된 자세로 되돌릴까요? 주행 중에는 시트를 움직이지 않습니다.",
+  8: "출발 전에 원래 자세로 돌려 드릴까요? 달리는 동안에는 시트를 움직이지 않아요.",
   9: "점수는 정차 중에만. 벨트 80, 휴식 20퍼센트.",
-  10: "동의한 운전자만, 점수만 보험사로. 기록은 할인에만 씁니다.",
-  11: "글리오, 자리 벨트 점검해 줘. 모두 맸어요.",
-  12: "Pleos SDK와 Gleo 연동으로 만들었습니다. 보험사 B2B로 시작해 렌트, 법인차, 블루핸즈로. 글리오 헬스.",
+  10: "보험 연계는 동의한 운전자만, 점수만. 기록은 할인에만 씁니다.",
+  11: "글리오, 자리 벨트 점검해 줘. 네 명 모두 맸어요.",
+  12: "홈에는 사람과 차 기능이 함께 있어요. 지금은 좌석이 열려 있고, 기록은 차 안에만 남아요.",
+  13: "Pleos SDK와 Gleo 연동으로 만들었습니다. 보험사 B2B로 시작해, 사람과 차를 함께 돌보는 플랫폼으로. 글리오 헬스.",
 };
 
 function tts(text, wav) {
+  // 한글이 콘솔 입력 인코딩에서 깨지지 않도록 UTF-8 파일로 넘긴다 (깨지면 엉뚱한 소리를 길게 읽는다)
+  const txt = wav.replace(/\.wav$/, ".txt");
+  fs.writeFileSync(txt, text, "utf8");
   const ps = `Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer;
     $v = $s.GetInstalledVoices() | Where-Object { $_.VoiceInfo.Culture.Name -eq 'ko-KR' } | Select-Object -First 1;
     if ($v) { $s.SelectVoice($v.VoiceInfo.Name) }; $s.Rate = 2; $s.SetOutputToWaveFile('${wav.replace(/'/g, "''")}');
-    $s.Speak([Console]::In.ReadToEnd()); $s.Dispose()`;
-  execFileSync("powershell", ["-NoProfile", "-Command", ps], { input: text, encoding: "utf8" });
+    $s.Speak([IO.File]::ReadAllText('${txt.replace(/'/g, "''")}', [Text.Encoding]::UTF8)); $s.Dispose()`;
+  execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" });
 }
 const duration = (file) => Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file], { encoding: "utf8" }).trim());
 

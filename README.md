@@ -14,7 +14,9 @@
 | 동의 기반 보험 연계 | 동의한 운전자만 월 점수와 할인 대상 여부만 공유(원자료 없음), 할인에만 사용 | — |
 | Gleo 앱 연동 | "자리·벨트 점검해 줘" · "내 글리오 헬스 점수" · "쉴 곳 찾아 줘" | Gleo Interface `assets/schema.json` (함수 3개), Callback `APP_ACTION_RESPONSE` |
 
-디자인은 Pleos Connect UI Design Guide 다크 테마 토큰(`res/values/colors.xml`)과 Gleo 말풍선 색을 그대로 씁니다. 화면은 왼쪽 **사람** · 오른쪽 **차** 두 축이며, 차 축(배터리·타이어·경고등)은 다음 버전에 모듈로 들어옵니다.
+디자인은 Pleos Connect UI Design Guide 다크 테마 토큰(`res/values/colors.xml`)과 Gleo 말풍선 색을 그대로 씁니다.
+
+**화면 (v0.3)**: 첫 화면 'GLIO Health' 홈 = **human**(좌석 · 공기 상태 · 마인드) + **car**(노면 정보 · 차량 정보). 지금 열리는 것은 **좌석**이고, 나머지 칸은 누르면 무엇이 들어올지 안내합니다. 좌석 화면 = 안전벨트 · 휴식 · 이번 주행 점수 · **운전 자세**(시트 위치 단계, 웰니스 안내) · 이번 주행 · 이번 달.
 
 ## 플랫폼 기반과 보안 (v0.2.0)
 | 항목 | 내용 |
@@ -28,7 +30,7 @@
 | 경로 | 내용 |
 |---|---|
 | `android/` | Android(Kotlin) 앱 — 엔진 `engine/GleoHealthEngine.kt`, 기록 코어 `core/`, 암호화 저장 `store/`, 차량 연동 `vehicle/PleosVehicleSource.kt`, Gleo 수신기 `gleo/` |
-| `android/app/src/test/` | 단위 테스트 14개 — 엔진(명세 경계값: 2시간/15분, 80점, 점수 예시 100·80·93.3), 저장소(재시작 유지·평문 없음·위변조·13개월), Gleo 보호 규칙 |
+| `android/app/src/test/` | 단위 테스트 16개 — 엔진(명세 경계값: 2시간/15분, 80점, 점수 예시 100·80·93.3), 저장소(재시작 유지·평문 없음·위변조·13개월), Gleo 보호 규칙, 운전 자세 규칙 |
 | `mvp/` | 같은 규칙의 JavaScript 엔진 + 브라우저 시뮬레이터(시연 영상 원본) |
 | `apk/` | 실행 가능한 release APK |
 

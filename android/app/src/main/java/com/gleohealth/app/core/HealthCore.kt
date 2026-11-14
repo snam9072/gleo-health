@@ -39,6 +39,15 @@ object HealthCore {
 
     @Volatile var uiVisible = false
 
+    /** 같은 자세로 달린 분(등받이·허리 받침 단계가 그대로인 동안) — 화면용, 저장하지 않음 */
+    var postureSameMin = 0
+        private set
+    private var lastPostureKey: Pair<Int?, Int?>? = null
+
+    /** 이번 주행에서 쉰 횟수(휴식 인정 이벤트 수) — 화면용, 저장하지 않음 */
+    var restCount = 0
+        private set
+
     private val stateListeners = mutableSetOf<() -> Unit>()
     private val eventListeners = mutableSetOf<(Event) -> Unit>()
     private val main = Handler(Looper.getMainLooper())
@@ -74,11 +83,15 @@ object HealthCore {
         var l = TripStore.rollOver(ledger, month())
         val events = mutableListOf<Event>()
         var trip = l.current
+        val key = snapshot.posture?.let { it.backrest to it.lumbar }
+        if (key != lastPostureKey) { postureSameMin = 0; lastPostureKey = key }
         repeat(minutes) {
             val r = GleoHealthEngine.tick(trip, signal(1))
             trip = r.trip
             events += r.events
+            if (signal(0).moving) postureSameMin += 1
         }
+        restCount += events.count { it.type == com.gleohealth.app.engine.EventType.REST_OK }
         l = l.copy(current = trip)
         commit(l)
         events.forEach { e -> eventListeners.forEach { it(e) } }
@@ -88,6 +101,7 @@ object HealthCore {
     fun newTrip() {
         val l = ledger
         if (l.current.minutes == 0) return
+        restCount = 0; postureSameMin = 0
         commit(l.copy(current = Trip(), finished = l.finished + com.gleohealth.app.store.StoredTrip(l.month, l.current)))
     }
 

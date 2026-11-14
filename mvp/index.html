@@ -41,29 +41,46 @@
   .meta b { color: var(--text); }
   .main { overflow: auto; }
   .driving { min-width: 0; }
-  /* v0.2: 사람 축(좌석·휴식·점수) + 차 축(2차 버전 자리) — Android MainActivity 와 같은 구성 */
-  .app { padding: 24px 32px; display: grid; grid-template-columns: 1.05fr 1fr 0.85fr; grid-auto-rows: auto; gap: 18px 22px; min-height: 0; align-content: start; }
-  .axis { font-size: 18px; font-weight: 700; margin: 0; }
-  .axis-people { grid-column: 1 / 3; color: var(--ok); } .axis-car { color: var(--accent); }
-  .car-col { grid-column: 3; grid-row: 3; }
-  .app > .card, .app > .right-col { align-self: start; min-height: auto; }
-  .app { align-self: start; } /* 내용 높이대로 — 화면보다 길면 본문이 스크롤된다 */
-  .car-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--panel2); font-size: 19px; }
-  .car-row:last-of-type { border-bottom: none; }
-  .tag { font-size: 13px; color: var(--gleo-speaker); background: var(--panel2); border-radius: 8px; padding: 4px 10px; }
-  .car-note { color: var(--muted); font-size: 15px; line-height: 1.6; margin: 12px 0 0; }
+  /* v0.3: 홈(사람·차 타일) → 좌석 화면 — 마스터 시안 2026-11-14, Android MainActivity 와 같은 구성 */
+  .app { padding: 24px 32px; min-height: 0; align-self: start; }
+  .view[hidden] { display: none; }
+  .home-head { display: flex; align-items: center; gap: 18px; margin-bottom: 26px; }
+  .home-head img { border-radius: 16px; }
+  .home-head h1 { margin: 0; font-size: 40px; letter-spacing: .5px; }
+  .home-head .sub { color: var(--muted); font-size: 18px; }
+  .home-head .ver { margin-left: 6px; align-self: flex-start; }
+  .groups { display: grid; grid-template-columns: 3fr 2fr; gap: 26px; }
+  .group { background: var(--panel); border: 1px solid var(--panel2); border-radius: 24px; padding: 22px 24px 26px; }
+  .axis { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0 0 16px; }
+  .axis-people { color: var(--ok); } .axis-car { color: var(--accent); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+  .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 190px; border-radius: 20px; border: 2px solid var(--panel2); background: var(--bg); color: var(--text); font: inherit; cursor: pointer; padding: 16px; }
+  .tile b { font-size: 22px; } .tile span { font-size: 15px; color: var(--muted); }
+  .tile.live { border-color: var(--ok); background: rgba(0,224,116,.08); }
+  .tile.live svg { color: var(--ok); }
+  .tile.soon { opacity: .72; } .tile.soon svg { color: var(--idle); }
+  .tile:focus-visible { outline: 3px solid var(--gleo-speaker); }
+  .soon-panel { margin-top: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px 22px; font-size: 18px; line-height: 1.6; }
+  .soon-panel[hidden] { display: none; }
+  .soon-panel b { color: var(--gleo-speaker); }
+  .back { width: 48px; height: 48px; border-radius: 14px; border: none; background: var(--panel2); color: var(--text); font-size: 30px; line-height: 1; cursor: pointer; }
+  .seat-grid { display: grid; grid-template-columns: 1.05fr 1fr 1fr; gap: 18px 22px; align-items: start; margin-top: 18px; }
+  .col { display: grid; gap: 18px; }
   .ver { font-size: 14px; color: var(--gleo-speaker); background: var(--panel2); border-radius: 8px; padding: 3px 10px; }
-  .saved { color: var(--idle); font-size: 13px; margin-top: 10px; }
-  /* 좁은 화면(분할·세로): 차 축은 사람 축 아래로 */
+  .saved { color: var(--idle); font-size: 13px; margin-top: 12px; }
+  .kv { display: flex; justify-content: space-between; font-size: 17px; padding: 5px 0; color: var(--muted); } .kv b { color: var(--text); }
+  .sbar { display: grid; grid-template-columns: 96px 1fr 44px; align-items: center; gap: 10px; font-size: 15px; color: var(--muted); margin-top: 6px; }
+  .sbar .bar i { background: var(--ok); } .sbar .bar.low i { background: var(--warn); }
+  .pose { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; } .pose .big { font-size: 40px; font-weight: 800; white-space: nowrap; }
+  .steps { display: grid; gap: 6px; margin: 10px 0; font-size: 15px; color: var(--muted); }
+  .tip { background: var(--panel2); border-radius: 12px; padding: 10px 14px; font-size: 16px; line-height: 1.5; margin-top: 8px; }
+  /* 좁은 화면(분할·세로): 세 번째 열은 아래로 */
   @media (max-width: 1700px) {
-    .app { grid-template-columns: 1.05fr 1fr; }
-    .axis-people { grid-column: 1 / -1; }
-    .axis-car { grid-column: 1 / -1; grid-row: 4; }
-    .car-col { grid-column: 1 / -1; grid-row: 5; }
-    .car-col .rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 24px; }
-    .car-row { border-bottom: none; }
+    .seat-grid { grid-template-columns: 1.05fr 1fr; }
+    .col3 { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   }
-  .app-title { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; }
+  @media (max-width: 1200px) { .groups { grid-template-columns: 1fr; } }
+  .app-title { display: flex; align-items: center; gap: 14px; }
   .app-title h1 { margin: 0; font-size: 34px; }
   .app-title .sub { color: var(--muted); font-size: 18px; }
   .card { background: var(--panel); border: 1px solid var(--panel2); border-radius: 22px; padding: 24px; min-height: 0; }
@@ -149,40 +166,67 @@
       <div class="meta">이번 주행 <b id="tripMin">0분</b><br>연속 운전 <b id="contMin">0분</b><br>탑승 <b id="occ">1명</b></div>
     </aside>
     <section class="app">
-      <div class="app-title"><h1>글리오 헬스</h1><span class="sub">탑승자 모두의 안전벨트와 휴식</span><span class="ver">v0.2</span></div>
-      <h2 class="axis axis-people">사람 · 오늘의 탑승 건강</h2>
-      <h2 class="axis axis-car">차 · 상태</h2>
-      <div class="card">
-        <h2>좌석 · 안전벨트</h2>
-        <div class="car">
-          <div class="seat" id="DRIVER"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>운전석</span></div>
-          <div class="seat" id="PASSENGER"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>조수석</span></div>
-          <div class="seat" id="REAR_LEFT"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>뒷좌석 왼쪽</span></div>
-          <div class="seat" id="REAR_RIGHT"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>뒷좌석 오른쪽</span></div>
+      <!-- 홈 (마스터 시안 2026-11-14): 사람 = 좌석·공기 상태·마인드 / 차 = 노면 정보·차량 정보. 지금 열린 것은 좌석뿐 -->
+      <div id="home" class="view">
+        <div class="home-head"><img src="./assets/icon.svg" width="64" height="64" alt=""><div><h1>GLIO Health</h1><span class="sub">사람과 차, 차 안에서 함께 챙겨요</span></div><span class="ver">v0.3</span></div>
+        <div class="groups">
+          <div class="group"><h2 class="axis axis-people"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="3"/><path d="M7 21v-6a5 5 0 0 1 10 0v6h-3v-5h-4v5Z"/></svg> human · 사람</h2>
+            <div class="tiles">
+              <button class="tile live" data-open="seat"><svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><b>좌석</b><span id="tileSeat">벨트 · 휴식 · 자세</span></button>
+              <button class="tile soon" data-soon="air"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M3 12c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/><path d="M3 16c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/></svg><b>공기 상태</b><span>다음 버전</span></button>
+              <button class="tile soon" data-soon="mind"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/></svg><b>마인드</b><span>다음 버전</span></button>
+            </div></div>
+          <div class="group"><h2 class="axis axis-car"><svg width="24" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15v-3l2-5h10l3 4h2a1 1 0 0 1 1 1v3h-2"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6"/></svg> car · 차</h2>
+            <div class="tiles">
+              <button class="tile soon" data-soon="road"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 5 21M15 3l4 18M12 5v2M12 11v2M12 17v2"/></svg><b>노면 정보</b><span>다음 버전</span></button>
+              <button class="tile soon" data-soon="battery"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="4" width="10" height="17" rx="2"/><path d="M10 2h4M10 16h4M10 12h4"/></svg><b>차량 정보</b><span>배터리 · 다음 버전</span></button>
+            </div></div>
         </div>
-        <div class="belt-summary" id="beltSummary"></div>
+        <div class="soon-panel" id="soonPanel" hidden></div>
       </div>
-      <div class="right-col">
-        <div class="card">
-          <h2>휴식 페이스메이커</h2>
-          <div class="rest">
-            <div class="ring" id="ring"><div class="inner"><div><div class="t" id="ringT">0:00</div><div class="l">/ 2:00 연속 운전</div></div></div></div>
-            <div class="rest-text" id="restText">2시간마다 15분 쉬면<br><b>휴식 점수</b>가 지켜져요</div>
+      <!-- 좌석 -->
+      <div id="seatView" class="view" hidden>
+        <div class="app-title"><button class="back" data-home aria-label="홈으로">‹</button><h1>좌석</h1><span class="sub">안전벨트 · 휴식 · 자세</span></div>
+        <div class="seat-grid">
+          <div class="card">
+            <h2>안전벨트</h2>
+            <div class="car">
+              <div class="seat" id="DRIVER"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>운전석</span></div>
+              <div class="seat" id="PASSENGER"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>조수석</span></div>
+              <div class="seat" id="REAR_LEFT"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>뒷좌석 왼쪽</span></div>
+              <div class="seat" id="REAR_RIGHT"><svg class="ico" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a2 2 0 0 1 2 2v7.2l6.4 1.1A2 2 0 0 1 17 15.3V19a1 1 0 0 1-1 1h-2v1.5a.5.5 0 0 1-1 0V20H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg><span>뒷좌석 오른쪽</span></div>
+            </div>
+            <div class="belt-summary" id="beltSummary"></div>
+          </div>
+          <div class="col">
+            <div class="card">
+              <h2>휴식</h2>
+              <div class="rest">
+                <div class="ring" id="ring"><div class="inner"><div><div class="t" id="ringT">0:00</div><div class="l">쉬지 않고 달린 시간</div></div></div></div>
+                <div class="rest-text" id="restText"></div>
+              </div>
+            </div>
+            <div class="card" id="scoreCard">
+              <h2>이번 주행 점수</h2>
+              <div id="scoreBody"></div>
+            </div>
+          </div>
+          <div class="col col3">
+            <div class="card" id="postureCard">
+              <h2>운전 자세</h2>
+              <div id="postureBody"></div>
+            </div>
+            <div class="card">
+              <h2>이번 주행</h2>
+              <div id="tripBody"></div>
+            </div>
+            <div class="card">
+              <h2>이번 달</h2>
+              <div id="monthBody"></div>
+              <div class="saved">기록은 이 차에만 남아요 · 13개월 뒤 지워져요</div>
+            </div>
           </div>
         </div>
-        <div class="card" id="scoreCard">
-          <h2>글리오 헬스 점수</h2>
-          <div id="scoreBody"></div>
-          <div class="saved" id="savedNote">기록은 이 차 안에만 암호화해 저장돼요 · 13개월 보관</div>
-        </div>
-      </div>
-      <div class="card car-col">
-        <div class="rows">
-          <div class="car-row"><span>배터리</span><span class="tag">2차</span></div>
-          <div class="car-row"><span>타이어 공기압</span><span class="tag">2차</span></div>
-          <div class="car-row"><span>경고등 · 소모품</span><span class="tag">2차</span></div>
-        </div>
-        <p class="car-note">배터리 · 타이어 · 경고등 카드가 2차 버전에서 이 자리에 들어옵니다. 지금은 사람 축(안전벨트 · 휴식)을 먼저 완성했어요. 차 신호를 읽는 권한과 화면은 에뮬레이터에서 확인한 뒤 붙입니다.</p>
       </div>
     </section>
   </div>
@@ -202,6 +246,11 @@
   <h3>주행</h3>
   <div class="row"><button id="gP">P</button><button id="gD">D</button> 속도 <input id="spd" type="range" min="0" max="120" value="0"> <span id="spdV">0</span></div>
   <div class="row"><button data-adv="1">+1분</button><button data-adv="10">+10분</button><button data-adv="15">+15분</button><button data-adv="60">+60분</button></div>
+  <h3>운전 자세 (시트 위치 단계)</h3>
+  <div class="row">등받이 <button data-pose="backrest" data-d="-1">세우기</button><button data-pose="backrest" data-d="1">눕히기</button> <span id="poseBack"></span></div>
+  <div class="row">허리 받침 <button data-pose="lumbar" data-d="-1">−</button><button data-pose="lumbar" data-d="1">+</button> <span id="poseLumbar"></span></div>
+  <h3>화면</h3>
+  <div class="row"><button data-home>홈</button><button data-open="seat">좌석</button></div>
   <h3>보험 연계</h3>
   <div class="row"><label><input type="checkbox" id="consent"> 점수 공유에 동의</label></div>
   <div class="row"><button id="reset">새 주행</button><button id="dash">대시보드 열기</button></div>
@@ -214,22 +263,25 @@
 </aside>
 
 <script type="module">
-import { SEATS, SEAT_NAMES, newTrip, tick, tripScore, monthlyReport, canOpenDashboard, RULES } from "./engine.js";
+import { SEATS, SEAT_NAMES, newTrip, tick, tripScore, monthlyReport, canOpenDashboard, RULES, postureAdvice } from "./engine.js";
 
 const $ = (id) => document.getElementById(id);
 const state = {
   trip: newTrip(), gear: "P", speed: 0, clockMin: 9 * 60,
   seats: { DRIVER: { occupied: true, buckled: true }, PASSENGER: { occupied: false, buckled: false }, REAR_LEFT: { occupied: false, buckled: false }, REAR_RIGHT: { occupied: false, buckled: false } },
   consent: false, events: [], monthTrips: [], showScore: false,
+  view: "home", restCount: 0,
+  // 시트 위치 단계(단위 없음) — 실제 앱은 Pleos Seat.getCurrentSeat…Position 으로 읽는다
+  posture: { backrest: 3, backrestMax: 9, lumbar: 0, lumbarMax: 4, sameMin: 0 },
 };
 // v0.2 기록 유지(P1): 실제 앱은 Keystore 키로 AES-GCM 암호화 저장. 시뮬레이터는 브라우저 저장소에 같은 요약만 둔다.
-const KEY = "gleo-health-sim-v0.2";
+const KEY = "gleo-health-sim-v0.3";
 const video = new URLSearchParams(location.search).has("scene");
-function save() { if (video) return; try { localStorage.setItem(KEY, JSON.stringify({ trip: state.trip, monthTrips: state.monthTrips, consent: state.consent, seats: state.seats, clockMin: state.clockMin })); } catch {} }
+function save() { if (video) return; try { localStorage.setItem(KEY, JSON.stringify({ trip: state.trip, monthTrips: state.monthTrips, consent: state.consent, seats: state.seats, clockMin: state.clockMin, posture: state.posture, restCount: state.restCount })); } catch {} }
 function restore() {
   if (video) return false;
   try { const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (!d || !d.trip) return false;
-    Object.assign(state, { trip: d.trip, monthTrips: d.monthTrips || [], consent: !!d.consent, seats: d.seats || state.seats, clockMin: d.clockMin || state.clockMin }); return true;
+    Object.assign(state, { trip: d.trip, monthTrips: d.monthTrips || [], consent: !!d.consent, seats: d.seats || state.seats, clockMin: d.clockMin || state.clockMin, posture: d.posture || state.posture, restCount: d.restCount || 0 }); return true;
   } catch { return false; }
 }
 const hm = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
@@ -247,6 +299,8 @@ function advance(minutes) {
     const r = tick(state.trip, signal(1));
     state.trip = r.trip;
     state.clockMin += 1;
+    if (state.speed > 0 && state.gear !== "P") state.posture.sameMin += 1; // 앉은 채 달린 시간 = 같은 자세 유지
+    for (const e of r.events) { if (e.type === "REST_OK") state.restCount += 1; }
     for (const e of r.events) { state.events.push(e); log(`${hm(state.clockMin)} ${e.text}`); say(e.text); }
   }
   render();
@@ -269,23 +323,48 @@ function render() {
     if (st.occupied) { occ++; if (!st.buckled) need++; }
   }
   $("occ").textContent = `${occ}명`;
-  $("beltSummary").innerHTML = need ? `<span style="color:var(--warn)">벨트를 매지 않은 좌석 ${need}곳</span>` : `<span style="color:var(--ok)">탑승 ${occ}석 모두 착용 ✓</span>`;
+  const open = SEATS.filter((k) => state.seats[k].occupied && !state.seats[k].buckled).map((k) => SEAT_NAMES[k]);
+  $("beltSummary").innerHTML = open.length ? `<span style="color:var(--warn)">${open.join(", ")} 벨트가 풀려 있어요</span>` : `<span style="color:var(--ok)">${occ}명 모두 맸어요 ✓</span>`;
   const pct = Math.min(1, state.trip.continuousMin / RULES.restSuggestAtMin);
   const col = pct >= 1 ? "var(--warn)" : pct > 0.75 ? "var(--gold)" : "var(--accent)";
   $("ring").style.background = `conic-gradient(${col} ${pct * 360}deg, var(--panel2) 0)`;
   $("ringT").textContent = hm(state.trip.continuousMin);
+  const left = RULES.restSuggestAtMin - state.trip.continuousMin;
+  $("restText").innerHTML = state.trip.continuousMin === 0 ? "2시간 달리면<br><b>15분 쉬어 가요</b>"
+    : left > 0 ? `쉬어 갈 때까지<br><b>${hm(left)}</b> 남았어요` : "<b>지금 쉬어 가면 좋아요</b><br>15분 쉬면 다시 셉니다";
   // 점수: 주행 중엔 잠금 (D9)
   const s = tripScore(state.trip);
+  const m = monthlyReport([...state.monthTrips, state.trip], { consent: state.consent });
   if (moving) {
-    $("scoreBody").innerHTML = `<div class="locked">🔒 정차 후 볼 수 있어요</div>`;
+    $("scoreBody").innerHTML = `<div class="locked">멈추면 보여 드릴게요</div>`;
   } else {
-    const m = monthlyReport([...state.monthTrips, state.trip], { consent: state.consent });
     $("scoreBody").innerHTML = `<div class="score"><div class="big">${s.total}<small>점</small></div>
       <div class="bars"><div>벨트 ${s.belt} <span style="color:var(--muted)">× 0.8</span><div class="bar"><i style="width:${s.belt}%"></i></div></div>
-      <div>휴식 ${s.rest} <span style="color:var(--muted)">× 0.2</span><div class="bar rest"><i style="width:${s.rest}%"></i></div></div></div></div>
-      <div>${m.eligible ? '<span class="pill ok">이번 달 ' + m.monthScore + '점 · 할인 대상</span>' : '<span class="pill no">이번 달 ' + m.monthScore + '점 · 80점부터 할인 대상</span>'}
-      <span class="pill no">${state.consent ? "점수만 공유 중 · 할인에만 사용" : "보험사 공유 꺼짐"}</span></div>`;
+      <div>휴식 ${s.rest} <span style="color:var(--muted)">× 0.2</span><div class="bar rest"><i style="width:${s.rest}%"></i></div></div></div></div>`;
   }
+  // 운전 자세 (웰니스, D25·D28) — 주행 중엔 한 줄만
+  const pz = state.posture; const adv = postureAdvice({ backrest: pz.backrest, backrestMax: pz.backrestMax, lumbar: pz.lumbar, sameMin: pz.sameMin });
+  const stepBar = (v, max) => `<div class="bar"><i style="width:${Math.round((v / max) * 100)}%"></i></div>`;
+  $("postureBody").innerHTML = `<div class="pose"><span class="big">${adv.label}</span><span style="color:var(--muted)">같은 자세 ${hm(pz.sameMin)}</span></div>` +
+    (moving ? "" : `<div class="steps"><div class="sbar"><span>등받이</span>${stepBar(pz.backrest, pz.backrestMax)}<span>${pz.backrest}/${pz.backrestMax}</span></div>
+      <div class="sbar"><span>허리 받침</span>${stepBar(pz.lumbar, pz.lumbarMax)}<span>${pz.lumbar}/${pz.lumbarMax}</span></div></div>`) +
+    (adv.tips.length ? `<div class="tip">${moving ? adv.tips[adv.tips.length - 1] : adv.tips.join("<br>")}</div>` : `<div class="tip">지금 자세 좋아요</div>`);
+  // 이번 주행
+  const bars = SEATS.filter((k) => state.trip.seatMin[k].occupied > 0).map((k) => {
+    const sm = state.trip.seatMin[k]; const r = Math.round((sm.buckled / sm.occupied) * 100);
+    return `<div class="sbar"><span>${SEAT_NAMES[k]}</span><div class="bar${r < 100 ? " low" : ""}"><i style="width:${r}%"></i></div><span>${r}%</span></div>`;
+  }).join("");
+  $("tripBody").innerHTML = `<div class="kv"><span>달린 시간</span><b>${hm(state.trip.minutes)}</b></div><div class="kv"><span>탄 사람</span><b>${occ}명</b></div><div class="kv"><span>쉰 횟수</span><b>${state.restCount}번</b></div>` +
+    (bars ? `<div style="margin-top:8px;font-size:15px;color:var(--muted)">좌석별 벨트 맨 시간</div>${bars}` : "");
+  // 이번 달
+  const trips = state.monthTrips.length + (state.trip.minutes > 0 ? 1 : 0);
+  const gap = Math.max(0, Math.round((RULES.discountThreshold - m.monthScore) * 10) / 10);
+  $("monthBody").innerHTML = `<div class="kv"><span>주행</span><b>${trips}번</b></div><div class="kv"><span>점수</span><b>${m.monthScore}점</b></div>` +
+    `<div class="tip">${m.eligible ? "이번 달 보험 할인 받아요" : `할인까지 ${gap}점 남았어요`}${state.consent ? " · 점수만 보험사에 보내요" : " · 보험사에는 안 보내요"}</div>`;
+  $("tileSeat").textContent = open.length ? `${open.join(", ")} 벨트 풀림` : `${occ}명 착용 · 쉬기까지 ${left > 0 ? hm(left) : "지금"}`;
+  // 화면 전환
+  $("home").hidden = state.view !== "home"; $("seatView").hidden = state.view !== "seat";
+  $("poseBack").textContent = `${pz.backrest}/${pz.backrestMax}`; $("poseLumbar").textContent = `${pz.lumbar}/${pz.lumbarMax}`;
   // 콘솔
   $("seatCtl").innerHTML = SEATS.map((k) => `<div class="row"><span style="width:96px">${SEAT_NAMES[k]}</span>
     <button data-seat="${k}" data-f="occupied" class="${state.seats[k].occupied ? "on" : ""}">착석</button>
@@ -295,17 +374,29 @@ function render() {
   save();
 }
 
+// 다음 버전 타일 — 비어 있는 이유와 다음 단계를 글로 (R-5)
+const SOON = {
+  air: "<b>공기 상태</b> — 막히는 길에서 바깥 공기가 들어오는지, 창을 닫고 오래 달렸는지 보고 환기할 때를 알려 줘요. 공조 신호를 읽는 권한을 확인한 뒤 열어요.",
+  mind: "<b>마인드</b> — 오래 막힌 길, 밤 운전, 긴 운전 뒤에 잠깐 숨 돌릴 때를 알려 줘요. 의료 기능이 아니라 쉬어 가기 안내예요.",
+  road: "<b>노면 정보</b> — 여러 차가 지난 길의 패임·결빙 구간을 미리 알려 줘요. 차량 센서는 앱이 바로 읽을 수 없어 현대차 데이터와 연결해 열어요.",
+  battery: "<b>차량 정보</b> — 배터리·타이어·경고등을 쉬운 말로 풀고 충전소·블루핸즈 찾기로 이어 줘요. 차량 신호 권한을 확인한 뒤 열어요.",
+};
 // 콘솔 이벤트
 document.addEventListener("click", (ev) => {
   const b = ev.target.closest("button"); if (!b) return;
   if (b.dataset.seat) { const st = state.seats[b.dataset.seat]; st[b.dataset.f] = !st[b.dataset.f]; if (b.dataset.f === "buckled" && st.buckled) st.occupied = true; if (b.dataset.f === "occupied" && !st.occupied) st.buckled = false; advance(0); }
   if (b.dataset.adv) advance(Number(b.dataset.adv));
+  if (b.dataset.open === "seat") { state.view = "seat"; $("soonPanel").hidden = true; render(); }
+  if (b.hasAttribute("data-home")) { state.view = "home"; render(); }
+  if (b.dataset.soon) { $("soonPanel").innerHTML = SOON[b.dataset.soon]; $("soonPanel").hidden = false; }
+  if (b.dataset.pose) { const k = b.dataset.pose, max = k === "backrest" ? state.posture.backrestMax : state.posture.lumbarMax;
+    state.posture[k] = Math.min(max, Math.max(0, state.posture[k] + Number(b.dataset.d))); state.posture.sameMin = 0; render(); }
   if (b.id === "gP") { state.gear = "P"; state.speed = 0; advance(0); }
   if (b.id === "gD") { state.gear = "D"; if (!state.speed) state.speed = 30; advance(0); }
-  if (b.id === "reset") { state.monthTrips.push(state.trip); state.trip = newTrip(); say(""); render(); }
+  if (b.id === "reset") { state.monthTrips.push(state.trip); state.trip = newTrip(); state.restCount = 0; state.posture.sameMin = 0; say(""); render(); }
   if (b.dataset.gleo === "check") {
     const occ = SEATS.filter((k) => state.seats[k].occupied); const open = occ.filter((k) => !state.seats[k].buckled);
-    say(open.length ? `안전벨트를 매지 않은 좌석: ${open.map((k) => SEAT_NAMES[k]).join(", ")}` : `${occ.length}석 모두 착석했고 모두 벨트를 맸어요`, "글리오, 자리·벨트 점검해 줘");
+    say(open.length ? `${open.map((k) => SEAT_NAMES[k]).join(", ")} 벨트가 풀려 있어요` : `${occ.length}명 모두 벨트 맸어요`, "글리오, 자리·벨트 점검해 줘");
   }
   if (b.dataset.gleo === "score") { const m = monthlyReport([...state.monthTrips, state.trip], { consent: false }); say(`이번 주행 ${tripScore(state.trip).total}점, 이번 달 ${m.monthScore}점이에요. ${m.eligible ? "보험 할인 대상이에요" : "80점부터 할인 대상이에요"}`, "내 글리오 헬스 점수 알려 줘"); }
   if (b.dataset.gleo === "rest") say("내비에서 휴게소 검색 화면을 열었어요. 들를 곳을 골라 주세요", "쉴 곳 찾아 줘");
@@ -334,15 +425,15 @@ const scenes = {
        <div class="stat"><b>82분</b><span>수도권 하루 통근 시간<br>(전국 73.9분)</span></div></div>
        <p class="src">출처: 삼성화재 교통안전문화연구소·교통문화지수(2025), 한국도로공사, 통계청 실험적 통계(2024)</p>`),
   3: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1]]); caption("가족 4명 탑승 · 뒷좌석 오른쪽 벨트 미착용 · P단에서는 알리지 않습니다"); },
-  4: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1]]); say("뒷좌석 오른쪽 안전벨트를 매 주세요"); caption("출발하는 순간, 좌석 이름으로 한 번만 — 경고음은 순정 기능이 맡습니다"); },
+  4: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1]]); say("뒷좌석 오른쪽, 벨트 매 주세요"); caption("출발하는 순간, 좌석 이름으로 한 번만 — 경고음은 순정 기능이 맡습니다"); },
   5: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 80, FAMILY_OK, 3]]); caption("4석 모두 착용 — 착석한 좌석의 벨트 체결 시간을 기록합니다"); },
-  6: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 119]]); say("2시간째 운전 중이에요. 다음 휴게소에 들를까요?", "글리오, 쉴 곳 찾아 줘"); caption("연속 운전 2시간 → 휴식 제안 1회 · 말 한마디로 내비 휴게소 검색 화면을 엽니다"); },
-  7: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 15]]); say("휴식이 기록됐어요. 연속 운전 시간을 다시 셉니다"); caption("휴게소에서 P단 15분 이상 → 휴식 인정"); },
-  8: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 16], ["P", 0, FAMILY_OK, 1]]); say("다시 출발하기 전에, 저장된 운전 자세로 되돌릴까요?", "응"); caption("휴식 뒤 P단·벨트 체결일 때만 제안 — 시트 메모리 호출은 권한 승인 뒤 (지금은 안내만, 주행 중엔 움직이지 않음)"); },
+  6: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 119]]); say("2시간 달렸어요. 다음 휴게소에서 쉬어 갈까요?", "글리오, 쉴 곳 찾아 줘"); caption("연속 운전 2시간 → 휴식 제안 1회 · 말 한마디로 내비 휴게소 검색 화면을 엽니다"); },
+  7: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 15]]); say("잘 쉬었어요. 다시 2시간 셀게요"); caption("휴게소에서 P단 15분 이상 → 휴식 인정"); },
+  8: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, S({ DRIVER: "o", PASSENGER: "o", REAR_LEFT: "o", REAR_RIGHT: "o" }), 16], ["P", 0, FAMILY_OK, 1]]); say("출발 전에 원래 운전 자세로 돌려 드릴까요?", "응"); caption("휴식 뒤 P단·벨트 체결일 때만 제안 — 시트 메모리 호출은 권한 승인 뒤 (지금은 안내만, 주행 중엔 움직이지 않음)"); },
   9: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); state.consent = true; caption("도착 · 정차 중에만 점수 확인 — 벨트 × 0.8 + 휴식 × 0.2"); },
   10: () => { state.clockMin = 8 * 60 + 50; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); state.consent = true; say("이번 달 글리오 헬스 점수는 " + monthlyReport([state.trip], { consent: true }).monthScore + "점이에요. 보험 할인 대상이에요"); caption("보험 연계(기획): 동의한 운전자만 · 월 점수와 할인 대상 여부만 · 할인에만 사용 — 앱은 보낼 내용만 만듭니다"); },
-  11: () => { state.clockMin = 18 * 60 + 5; play([["P", 0, FAMILY_OK, 1]]); say("4석 모두 착석했고 모두 벨트를 맸어요", "글리오, 자리·벨트 점검해 줘"); caption("Gleo 앱 연동 — 자리·벨트 점검 · 점수 · 쉴 곳 찾기 (함수 3개)"); },
-  12: () => { state.clockMin = 18 * 60 + 10; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); say("앱을 다시 켜도 이번 달 기록이 그대로예요"); caption("v0.2 — 기록은 차 안에만 암호화 저장 · 화면을 닫아도 기록 · 오른쪽은 2차에 들어올 차 상태 자리"); },
+  11: () => { state.clockMin = 18 * 60 + 5; play([["P", 0, FAMILY_OK, 1]]); say("4명 모두 벨트 맸어요", "글리오, 자리·벨트 점검해 줘"); caption("Gleo 앱 연동 — 자리·벨트 점검 · 점수 · 쉴 곳 찾기 (함수 3개)"); },
+  12: () => { state.clockMin = 18 * 60 + 10; play([["P", 0, FAMILY_UNBUCKLED, 1], ["D", 30, FAMILY_UNBUCKLED, 1], ["D", 100, FAMILY_OK, 129], ["P", 0, FAMILY_OK, 17], ["D", 90, FAMILY_OK, 70], ["P", 0, FAMILY_OK, 1]]); say("앱을 다시 켜도 이번 달 기록이 그대로예요"); caption("홈 — 사람(좌석·공기·마인드)과 차(노면·차량 정보). 지금은 좌석이 열려 있고, 기록은 차 안에만 암호화해 남습니다"); },
   13: () => slide(`<h1 style="font-size:56px">Pleos Connect SDK 로 만듭니다</h1>
        <p>Vehicle SDK — 좌석 착석·안전벨트·시트 메모리·주행 시간 · NaviHelper — 휴게소 검색<br>TextToSpeech — 한 번의 음성 안내 · Gleo Interface — 음성으로 앱 기능 실행</p>
        <p style="margin-top:20px"><b style="color:#fff">보안</b> 기록 AES-GCM 암호화(Keystore 키) · Gleo 요청 확인·빈도 제한 · 응답은 최소값만</p>
@@ -351,7 +442,7 @@ const scenes = {
 };
 const params = new URLSearchParams(location.search);
 const scene = Number(params.get("scene"));
-if (scene && scenes[scene]) { document.body.classList.add("video"); scenes[scene](); render(); if (scene === 9) say(""); }
+if (scene && scenes[scene]) { document.body.classList.add("video"); state.view = scene === 12 ? "home" : "seat"; scenes[scene](); render(); if (scene === 9) say(""); }
 else { if (restore() && (state.trip.minutes > 0 || state.monthTrips.length)) { log("앱을 다시 켰어요 — 이번 달 기록을 불러왔습니다"); say("앱을 다시 켜도 이번 달 기록이 그대로예요"); } state.gear = "P"; state.speed = 0; render(); }
 </script>
 </body>
