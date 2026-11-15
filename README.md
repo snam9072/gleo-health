@@ -11,7 +11,7 @@
 | 휴식 페이스메이커 | 연속 운전 2시간 → 휴식 제안 1회, P단 15분 이상 정차 → 휴식 인정 | Vehicle SDK `Odometer`, AAOS `PERF_VEHICLE_SPEED` · `GEAR_SELECTION` |
 | 휴식 뒤 자세 되돌리기 | 휴식 뒤 P단·벨트 체결일 때만 "저장된 자세로 되돌릴까요?" 제안 — 앱은 시트를 직접 움직이지 않음 | Vehicle SDK `Seat.selectSeatMemory` (권한 협의 후) |
 | 글리오 헬스 점수 | 0.8 × 벨트 + 0.2 × 휴식, **정차 중에만** 표시. 보험 제휴 기준(시뮬레이션)은 **벨트 95점·휴식 90점을 둘 다** 넘을 때 (v0.3.4) | — |
-| 동의 기반 보험 연계(기획) | 제휴되면 동의한 운전자의 월 점수와 기준 충족 여부만 제공(원자료 없음). 지금 앱은 인터넷 권한이 없어 아무것도 보내지 않음 | — |
+| 동의 기반 보험 연계(기획) | 제휴되면 동의한 운전자의 월 점수와 기준 충족 여부만 제공(원자료 없음). 지금 앱 코드에는 외부 전송 기능이 없어 아무것도 보내지 않음(APK 의 인터넷 권한은 Pleos SDK 음성·보안 모듈이 포함) | — |
 | Gleo 앱 연동 | "자리·벨트 점검해 줘" · "내 글리오 헬스 점수" · "쉴 곳 찾아 줘" | Gleo Interface `assets/schema.json` (함수 3개), Callback `APP_ACTION_RESPONSE` |
 
 디자인은 Pleos Connect UI Design Guide 다크 테마 토큰(`res/values/colors.xml`)과 Gleo 말풍선 색을 그대로 씁니다.
